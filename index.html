@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>符文配置與數值計算器</title>
+  <style>
+    :root {
+      --bg-color: #1a1a24;
+      --panel-bg: #2b2b36;
+      --border-color: #4a4a5a;
+      
+      /* 品階顏色定義 */
+      --common: #a0a0a0;     /* 普通 - 灰色 */
+      --rare: #4caf50;       /* 稀有 - 綠色 */
+      --epic: #fbc02d;       /* 史詩 - 黃色 */
+      --unique: #e65100;     /* 獨特 - 橘黃色 */
+      --legendary: #d32f2f;  /* 傳說 - 紅色 */
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      background-color: var(--bg-color);
+      color: #fff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* 頂部：5個放置槽 (環狀/五角佈局) */
+    .slot-container {
+      position: relative;
+      width: 320px;
+      height: 320px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .center-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #fff 0%, #b0c4de 50%, transparent 70%);
+      box-shadow: 0 0 20px #fff;
+      animation: pulse 2s infinite alternate;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.6; transform: scale(0.9); }
+      100% { opacity: 1; transform: scale(1.1); }
+    }
+
+    /* 單個槽位+下拉選單的組合容器 */
+    .slot-wrapper {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* 5個槽位的環形定位 */
+    .slot-wrapper:nth-child(1) { top: 0px; left: 127.5px; }                 /* 順序 1: 正上 */
+    .slot-wrapper:nth-child(2) { top: 75px; right: 10px; }                 /* 順序 2: 右上 */
+    .slot-wrapper:nth-child(3) { bottom: 10px; right: 35px; }              /* 順序 3: 右下 */
+    .slot-wrapper:nth-child(4) { bottom: 10px; left: 35px; }               /* 順序 4: 左下 */
+    .slot-wrapper:nth-child(5) { top: 75px; left: 10px; }                  /* 順序 5: 左上 */
+
+    .slot {
+      width: 65px;
+      height: 65px;
+      background-color: #15151c;
+      border: 4px solid #4a4d5a;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: inset 0 0 10px #000, 0 4px 8px rgba(0,0,0,0.5);
+      transition: all 0.2s ease;
+      overflow: hidden;
+      font-size: 20px;
+      font-weight: bold;
+      color: #76c720;
+    }
+
+    .slot::after {
+      content: attr(data-slot-number);
+    }
+
+    .slot.filled::after {
+      content: "";
+    }
+
+    .slot-level-select {
+      background-color: #121218;
+      color: #76c720;
+      border: 1.5px solid var(--border-color);
+      border-radius: 10px;
+      padding: 2px 4px;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+      outline: none;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      text-align: center;
+    }
+
+    .slot-level-select:focus {
+      border-color: #76c720;
+    }
+
+    /* 數值輸入面板區塊 */
+    .stats-panel {
+      width: 110%;
+      background-color: var(--panel-bg);
+      border: 2px solid var(--border-color);
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 14px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+
+    .stat-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .stat-input-group label {
+      font-size: 12px;
+      color: #b0b0c0;
+      font-weight: bold;
+    }
+
+    .stat-input {
+      background-color: #121218;
+      border: 1.5px solid var(--border-color);
+      border-radius: 6px;
+      color: #fff;
+      padding: 6px 10px;
+      font-size: 13px;
+      font-weight: bold;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .stat-input:focus {
+      border-color: #76c720;
+    }
+
+    .stat-input::-webkit-outer-spin-button,
+    .stat-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .stat-input[type=number] {
+      -moz-appearance: textfield;
+    }
+
+    /* 最終計算結果展示面板 */
+    .result-panel {
+      width: 100%;
+      background: linear-gradient(135deg, #1f222e, #161821);
+      border: 2px solid #76c720;
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      box-shadow: 0 0 12px rgba(118, 199, 32, 0.2);
+    }
+
+    .result-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .result-title {
+      font-size: 12px;
+      color: #a0a0b0;
+    }
+
+    .result-value {
+      font-size: 18px;
+      font-weight: bold;
+      color: #76c720;
+      text-shadow: 0 0 6px rgba(118, 199, 32, 0.4);
+    }
+
+    /* 已選擇符文列表面板 */
+    .equipped-panel {
+      width: 100%;
+      background-color: var(--panel-bg);
+      border: 2px solid var(--border-color);
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .panel-header {
+      font-size: 13px;
+      font-weight: bold;
+      color: #76c720;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .equipped-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .equipped-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #1a1a24;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+    }
+
+    .equipped-item-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .equipped-slot-tag {
+      background-color: #4a4d5a;
+      color: #fff;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      font-size: 11px;
+    }
+
+    .equipped-effect {
+      color: #a0a0b0;
+      font-size: 11px;
+    }
+
+    .remove-btn {
+      color: #ff5252;
+      cursor: pointer;
+      font-weight: bold;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background-color: rgba(255, 82, 82, 0.1);
+    }
+    .remove-btn:hover {
+      background-color: rgba(255, 82, 82, 0.25);
+    }
+
+    /* 計算過程面板 */
+    .calc-detail-panel {
+      width: 100%;
+      background-color: #15151e;
+      border: 1.5px dashed var(--border-color);
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 11px;
+      color: #c0c0d0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .calc-formula {
+      background-color: #1f1f2a;
+      padding: 8px;
+      border-radius: 6px;
+      font-family: monospace;
+      line-height: 1.5;
+    }
+
+    .highlight-atk { color: #fbc02d; font-weight: bold; }
+    .highlight-hp { color: #4caf50; font-weight: bold; }
+
+    /* 中間：符文展示板 (固定長寬) */
+    .rune-board {
+      width: 360px;
+      height: 180px;
+      background-color: var(--panel-bg);
+      border: 3px solid var(--border-color);
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+      box-sizing: border-box;
+      overflow-y: auto;
+    }
+
+    .rune-board::-webkit-scrollbar {
+      width: 6px;
+    }
+    .rune-board::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 3px;
+    }
+
+    .rune-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-start;
+      align-content: flex-start;
+    }
+
+    /* 符文卡片通用樣式 (固定長寬) */
+    .rune-item {
+      width: 72px;
+      height: 72px;
+      border-radius: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      font-size: 13px;
+      padding: 4px;
+      text-align: center;
+      word-break: break-all;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      border: 2px solid #000;
+      transition: transform 0.1s, opacity 0.2s;
+      text-shadow: 1px 1px 2px #000;
+      box-sizing: border-box;
+      flex-shrink: 0;
+    }
+
+    .rune-item:hover {
+      transform: scale(1.04);
+    }
+
+    .rune-item.equipped {
+      opacity: 0.3;
+      filter: grayscale(80%);
+      cursor: not-allowed;
+    }
+
+    .slot .rune-item {
+      border-radius: 50%;
+      border: none;
+      box-shadow: none;
+    }
+
+    /* 品階對應顏色樣式 */
+    .rarity-普通 { background: linear-gradient(135deg, #707070, #404040); border-color: var(--common); }
+    .rarity-稀有 { background: linear-gradient(135deg, #388e3c, #1b5e20); border-color: var(--rare); }
+    .rarity-史詩 { background: linear-gradient(135deg, #fbc02d, #f57f17); border-color: var(--epic); color: #000; text-shadow: none; }
+    .rarity-獨特 { background: linear-gradient(135deg, #e65100, #bf360c); border-color: var(--unique); }
+    .rarity-傳說 { background: linear-gradient(135deg, #d32f2f, #b71c1c); border-color: var(--legendary); }
+
+    /* 底部：品階篩選按鈕 */
+    .filter-bar {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      background-color: #1f1f28;
+      padding: 8px;
+      border-radius: 8px;
+      gap: 6px;
+      box-sizing: border-box;
+    }
+
+    .filter-btn {
+      flex: 1;
+      padding: 8px 0;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 13px;
+      cursor: pointer;
+      color: #fff;
+      opacity: 0.6;
+      transition: all 0.2s;
+    }
+
+    .filter-btn.active {
+      opacity: 1;
+      transform: translateY(-2px);
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    .filter-btn[data-type="普通"] { background-color: var(--common); color: #000; }
+    .filter-btn[data-type="稀有"] { background-color: var(--rare); }
+    .filter-btn[data-type="史詩"] { background-color: var(--epic); color: #000; }
+    .filter-btn[data-type="獨特"] { background-color: var(--unique); }
+    .filter-btn[data-type="傳說"] { background-color: var(--legendary); }
+
+    .hint {
+      font-size: 12px;
+      color: #8a8a9e;
+      margin-top: -6px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- 上方 5 個放置槽 -->
+    <div class="slot-container">
+      <div class="slot-wrapper">
+        <div class="slot" data-slot-number="1" onclick="unequipRune(0)"></div>
+        <select class="slot-level-select" onchange="updateSlotLevel(0, this.value)" id="level-slot-0"></select>
+      </div>
+      <div class="slot-wrapper">
+        <div class="slot" data-slot-number="2" onclick="unequipRune(1)"></div>
+        <select class="slot-level-select" onchange="updateSlotLevel(1, this.value)" id="level-slot-1"></select>
+      </div>
+      <div class="slot-wrapper">
+        <div class="slot" data-slot-number="3" onclick="unequipRune(2)"></div>
+        <select class="slot-level-select" onchange="updateSlotLevel(2, this.value)" id="level-slot-2"></select>
+      </div>
+      <div class="slot-wrapper">
+        <div class="slot" data-slot-number="4" onclick="unequipRune(3)"></div>
+        <select class="slot-level-select" onchange="updateSlotLevel(3, this.value)" id="level-slot-3"></select>
+      </div>
+      <div class="slot-wrapper">
+        <div class="slot" data-slot-number="5" onclick="unequipRune(4)"></div>
+        <select class="slot-level-select" onchange="updateSlotLevel(4, this.value)" id="level-slot-4"></select>
+      </div>
+
+      <!-- 中心特效 -->
+      <div class="center-icon"></div>
+    </div>
+
+    <div class="hint">點擊符文可裝備，點擊上方已裝備符文可拆卸</div>
+
+    <!-- 數值輸入區塊 -->
+    <div class="stats-panel">
+      <div class="stat-input-group">
+        <label for="attackInput">基礎攻擊力</label>
+        <input type="number" id="attackInput" class="stat-input" placeholder="0" min="0" oninput="validateNumber(this, 'attack')">
+      </div>
+      <div class="stat-input-group">
+        <label for="hpInput">基礎血量</label>
+        <input type="number" id="hpInput" class="stat-input" placeholder="0" min="0" oninput="validateNumber(this, 'hp')">
+      </div>
+      <div class="stat-input-group">
+        <label for="astroAttackInput">星座攻擊力</label>
+        <input type="number" id="astroAttackInput" class="stat-input" placeholder="0" min="0" oninput="validateNumber(this, 'constellationAttack')">
+      </div>
+      <div class="stat-input-group">
+        <label for="astroHpInput">星座血量</label>
+        <input type="number" id="astroHpInput" class="stat-input" placeholder="0" min="0" oninput="validateNumber(this, 'constellationHp')">
+      </div>
+    </div>
+
+    <!-- 已選擇符文列表 -->
+    <div class="equipped-panel">
+      <div class="panel-header">
+        <span>已選擇符文狀態</span>
+        <span id="equippedCount" style="color: #a0a0b0; font-weight: normal;">(0/5)</span>
+      </div>
+      <div class="equipped-list" id="equippedList">
+        <div style="color: #666; font-size: 11px; text-align: center; padding: 4px;">尚未裝備任何符文</div>
+      </div>
+    </div>
+
+    <!-- 最終計算結果顯示 -->
+    <div class="result-panel">
+      <div class="result-item">
+        <span class="result-title">最終總攻擊力</span>
+        <span class="result-value" id="finalAttackVal">0</span>
+      </div>
+      <div class="result-item">
+        <span class="result-title">最終總生命值</span>
+        <span class="result-value" id="finalHpVal">0</span>
+      </div>
+    </div>
+
+    <!-- 詳細計算過程展開區塊 -->
+    <div class="calc-detail-panel">
+      <div style="font-weight: bold; color: #a0a0b0;">詳細計算過程：</div>
+      <div class="calc-formula" id="atkFormulaDetails">
+        <span class="highlight-atk">[攻擊]</span> (0 + 0 + 0) × (1 + 0%) = 0
+      </div>
+      <div class="calc-formula" id="hpFormulaDetails">
+        <span class="highlight-hp">[生命]</span> (0 + 0 + 0) × (1 + 0%) = 0
+      </div>
+    </div>
+
+    <!-- 中間符文展示板 -->
+    <div class="rune-board">
+      <div class="rune-grid" id="runeGrid"></div>
+    </div>
+
+    <!-- 下方分類篩選按鈕 -->
+    <div class="filter-bar">
+      <button class="filter-btn" data-type="普通" onclick="toggleFilter('普通')">普通</button>
+      <button class="filter-btn" data-type="稀有" onclick="toggleFilter('稀有')">稀有</button>
+      <button class="filter-btn" data-type="史詩" onclick="toggleFilter('史詩')">史詩</button>
+      <button class="filter-btn" data-type="獨特" onclick="toggleFilter('獨特')">獨特</button>
+      <button class="filter-btn" data-type="傳說" onclick="toggleFilter('傳說')">傳說</button>
+    </div>
+  </div>
+
+  <script>
+    // 符文清單
+    const runesData = [
+      { id: 1, name: "治癒", rarity: "普通" },
+      { id: 2, name: "堅硬2", rarity: "稀有" },
+      { id: 3, name: "壓縮", rarity: "史詩" },
+      { id: 4, name: "猛瑪", rarity: "史詩" },
+      { id: 5, name: "攻擊力3", rarity: "史詩" },
+      { id: 6, name: "體力3", rarity: "史詩" },
+      { id: 7, name: "吸血", rarity: "獨特" },
+      { id: 8, name: "強打", rarity: "獨特" },
+      { id: 9, name: "屏障", rarity: "獨特" },
+      { id: 10, name: "隕石", rarity: "傳說" },
+      { id: 11, name: "雷擊", rarity: "傳說" }
+    ];
+
+    // 全符文等級數值設定 (6~31 級可以直接在對應屬性後繼續擴充)
+    const runeStatsConfig = {
+      // 史詩級
+      "體力3": {
+        1: { flatHp: 875 }, 2: { flatHp: 900 }, 3: { flatHp: 925 }, 4: { flatHp: 950 }, 5: { flatHp: 975 },
+        6: { flatHp: 1000 }, 7: { flatHp: 1025 }, 8: { flatHp: 1050 }, 9: { flatHp: 1075 }, 10: { flatHp: 1100 },
+        11: { flatHp: 1125 }, 12: { flatHp: 1150 }, 13: { flatHp: 1175 }, 14: { flatHp: 1200 }, 15: { flatHp: 1225 },
+        16: { flatHp: 1250 }, 17: { flatHp: 1275 }, 18: { flatHp: 1300 }, 19: { flatHp: 1325 }, 20: { flatHp: 1350 },
+        21: { flatHp: 1375 }, 22: { flatHp: 1400 }, 23: { flatHp: 1425 }, 24: { flatHp: 1450 }, 25: { flatHp: 1475 },
+        26: { flatHp: 1500 }, 27: { flatHp: 1550 }, 28: { flatHp: 1600 }, 29: { flatHp: 1650 }, 30: { flatHp: 1700 },
+        31: { flatHp: 1875 }
+      },
+      "攻擊力3": {
+        1: { flatAtk: 35 }, 2: { flatAtk: 36 }, 3: { flatAtk: 37 }, 4: { flatAtk: 38 }, 5: { flatAtk: 39 },
+        6: { flatAtk: 40 }, 7: { flatAtk: 41 }, 8: { flatAtk: 42 }, 9: { flatAtk: 43 }, 10: { flatAtk: 44 },
+        11: { flatAtk: 45 }, 12: { flatAtk: 46 }, 13: { flatAtk: 47 }, 14: { flatAtk: 48 }, 15: { flatAtk: 49 },
+        16: { flatAtk: 50 }, 17: { flatAtk: 51 }, 18: { flatAtk: 52 }, 19: { flatAtk: 53 }, 20: { flatAtk: 54 },
+        21: { flatAtk: 55 }, 22: { flatAtk: 56 }, 23: { flatAtk: 57 }, 24: { flatAtk: 58 }, 25: { flatAtk: 59 },
+        26: { flatAtk: 60 }, 27: { flatAtk: 62 }, 28: { flatAtk: 64 }, 29: { flatAtk: 66 }, 30: { flatAtk: 68 },
+        31: { flatAtk: 75 }
+      },
+      "猛瑪": {
+        1: { hpPct: 0.195, atkPct: -0.25 },2: { hpPct: 0.200, atkPct: -0.25 },3: { hpPct: 0.205, atkPct: -0.25 },4: { hpPct: 0.210, atkPct: -0.25 },5: { hpPct: 0.215, atkPct: -0.25 },
+        6: { hpPct: 0.270, atkPct: -0.25 },7: { hpPct: 0.275, atkPct: -0.25 },8: { hpPct: 0.280, atkPct: -0.25 },9: { hpPct: 0.285, atkPct: -0.25 },10: { hpPct: 0.290, atkPct: -0.25 },
+        11: { hpPct: 0.345, atkPct: -0.25 },12: { hpPct: 0.355, atkPct: -0.25 },13: { hpPct: 0.365, atkPct: -0.25 },14: { hpPct: 0.375, atkPct: -0.25 },15: { hpPct: 0.385, atkPct: -0.25 },
+        16: { hpPct: 0.445, atkPct: -0.25 },17: { hpPct: 0.458, atkPct: -0.25 },18: { hpPct: 0.470, atkPct: -0.25 },19: { hpPct: 0.483, atkPct: -0.25 },20: { hpPct: 0.495, atkPct: -0.25 },
+        21: { hpPct: 0.595, atkPct: -0.25 },22: { hpPct: 0.608, atkPct: -0.25 },23: { hpPct: 0.620, atkPct: -0.25 },24: { hpPct: 0.633, atkPct: -0.25 },25: { hpPct: 0.645, atkPct: -0.25 },
+        26: { hpPct: 0.795, atkPct: -0.25 },27: { hpPct: 0.808, atkPct: -0.25 },28: { hpPct: 0.820, atkPct: -0.25 },29: { hpPct: 0.833, atkPct: -0.25 },30: { hpPct: 0.845, atkPct: -0.25 },
+        31: { hpPct: 1.020, atkPct: -0.25 }
+      },
+      "壓縮": {
+        1: { atkPct: 0.150, hpPct: -0.25 },2: { atkPct: 0.152, hpPct: -0.25 },3: { atkPct: 0.154, hpPct: -0.25 },4: { atkPct: 0.156, hpPct: -0.25 },5: { atkPct: 0.158, hpPct: -0.25 },
+        6: { atkPct: 0.170, hpPct: -0.25 },7: { atkPct: 0.175, hpPct: -0.25 },8: { atkPct: 0.180, hpPct: -0.25 },9: { atkPct: 0.185, hpPct: -0.25 },10: { atkPct: 0.190, hpPct: -0.25 },
+        11: { atkPct: 0.220, hpPct: -0.25 },12: { atkPct: 0.225, hpPct: -0.25 },13: { atkPct: 0.230, hpPct: -0.25 },14: { atkPct: 0.235, hpPct: -0.25 },15: { atkPct: 0.240, hpPct: -0.25 },
+        16: { atkPct: 0.270, hpPct: -0.25 },17: { atkPct: 0.275, hpPct: -0.25 },18: { atkPct: 0.280, hpPct: -0.25 },19: { atkPct: 0.285, hpPct: -0.25 },20: { atkPct: 0.290, hpPct: -0.25 },
+        21: { atkPct: 0.330, hpPct: -0.25 },22: { atkPct: 0.335, hpPct: -0.25 },23: { atkPct: 0.340, hpPct: -0.25 },24: { atkPct: 0.345, hpPct: -0.25 },25: { atkPct: 0.350, hpPct: -0.25 },
+        26: { atkPct: 0.390, hpPct: -0.25 },27: { atkPct: 0.395, hpPct: -0.25 },28: { atkPct: 0.400, hpPct: -0.25 },29: { atkPct: 0.405, hpPct: -0.25 },30: { atkPct: 0.410, hpPct: -0.25 },
+        31: { atkPct: 0.450, hpPct: -0.25 }
+      },
+
+      // 獨特級 (吸血、強打、屏障)
+      "吸血": {
+        1: { desc: "15%機率恢復30%攻擊生命" },2: { desc: "15%機率恢復32%攻擊生命" },3: { desc: "15%機率恢復34%攻擊生命" },4: { desc: "15%機率恢復36%攻擊生命" },5: { desc: "15%機率恢復38%攻擊生命" },
+        6: { desc: "15%機率恢復45%攻擊生命" },7: { desc: "15%機率恢復47%攻擊生命" },8: { desc: "15%機率恢復49%攻擊生命" },9: { desc: "15%機率恢復51%攻擊生命" },10: { desc: "15%機率恢復53%攻擊生命" },
+        11: { desc: "20%機率恢復55%攻擊生命" },12: { desc: "20%機率恢復57%攻擊生命" },13: { desc: "20%機率恢復59%攻擊生命" },14: { desc: "20%機率恢復61%攻擊生命" },15: { desc: "20%機率恢復63%攻擊生命" },
+        16: { desc: "20%機率恢復70%攻擊生命" },17: { desc: "20%機率恢復72%攻擊生命" },18: { desc: "20%機率恢復74%攻擊生命" },19: { desc: "20%機率恢復76%攻擊生命" },20: { desc: "20%機率恢復78%攻擊生命" },
+        21: { desc: "25%機率恢復80%攻擊生命" },22: { desc: "25%機率恢復82%攻擊生命" },23: { desc: "25%機率恢復84%攻擊生命" },24: { desc: "25%機率恢復86%攻擊生命" },25: { desc: "25%機率恢復88%攻擊生命" },
+        26: { desc: "25%機率恢復95%攻擊生命" },27: { desc: "25%機率恢復97%攻擊生命" },28: { desc: "25%機率恢復99%攻擊生命" },29: { desc: "25%機率恢復101%攻擊生命" },30: { desc: "25%機率恢復103%攻擊生命" },
+        31: { desc: "30%機率恢復110%攻擊生命" }
+      },
+      "強打": {
+        1: { atkPct: 0.070 },2: { atkPct: 0.072 },3: { atkPct: 0.074 },4: { atkPct: 0.076 },5: { atkPct: 0.078 },
+        6: { atkPct: 0.100 },7: { atkPct: 0.102 },8: { atkPct: 0.104 },9: { atkPct: 0.106 },10: { atkPct: 0.108 },
+        11: { atkPct: 0.130 },12: { atkPct: 0.134 },13: { atkPct: 0.138 },14: { atkPct: 0.142 },15: { atkPct: 0.146 },
+        16: { atkPct: 0.170 },17: { atkPct: 0.175 },18: { atkPct: 0.180 },19: { atkPct: 0.185 },20: { atkPct: 0.190 },
+        21: { atkPct: 0.230 },22: { atkPct: 0.235 },23: { atkPct: 0.240 },24: { atkPct: 0.245 },25: { atkPct: 0.250 },
+        26: { atkPct: 0.310 },27: { atkPct: 0.315 },28: { atkPct: 0.320 },29: { atkPct: 0.325 },30: { atkPct: 0.330 },
+        31: { atkPct: 0.400 }
+
+      },
+      "屏障": {
+        1: { hpPct: 0.175 },2: { hpPct: 0.180 },3: { hpPct: 0.185 },4: { hpPct: 0.190 },5: { hpPct: 0.195 },
+        6: { hpPct: 0.250 },7: { hpPct: 0.255 },8: { hpPct: 0.260 },9: { hpPct: 0.265 },10: { hpPct: 0.270 },
+        11: { hpPct: 0.325 },12: { hpPct: 0.335 },13: { hpPct: 0.345 },14: { hpPct: 0.355 },15: { hpPct: 0.365 },
+        16: { hpPct: 0.425 },17: { hpPct: 0.438 },18: { hpPct: 0.450 },19: { hpPct: 0.463 },20: { hpPct: 0.475 },
+        21: { hpPct: 0.575 },22: { hpPct: 0.588 },23: { hpPct: 0.600 },24: { hpPct: 0.613 },25: { hpPct: 0.625 },
+        26: { hpPct: 0.775 },27: { hpPct: 0.788 },28: { hpPct: 0.800 },29: { hpPct: 0.813 },30: { hpPct: 0.825 },
+        31: { hpPct: 1.000 }
+        
+        
+      }
+    };
+
+    // 狀態管理
+    let currentFilter = null;
+    let equippedSlots = [null, null, null, null, null];
+    let slotLevels = [1, 1, 1, 1, 1];
+
+    let playerStats = {
+      attack: 0,
+      hp: 0,
+      constellationAttack: 0,
+      constellationHp: 0
+    };
+
+    window.onload = () => {
+      initLevelSelects();
+      renderRunes();
+      calculateFinalStats();
+    };
+
+    function validateNumber(input, key) {
+      input.value = input.value.replace(/[^0-9]/g, '');
+      playerStats[key] = input.value ? parseInt(input.value, 10) : 0;
+      calculateFinalStats();
+    }
+
+    function initLevelSelects() {
+      for (let i = 0; i < 5; i++) {
+        const select = document.getElementById(`level-slot-${i}`);
+        select.innerHTML = '';
+        for (let lvl = 1; lvl <= 31; lvl++) {
+          const opt = document.createElement('option');
+          opt.value = lvl;
+          opt.textContent = `Lv.${lvl}`;
+          select.appendChild(opt);
+        }
+      }
+    }
+
+    function updateSlotLevel(index, level) {
+      slotLevels[index] = parseInt(level, 10);
+      calculateFinalStats();
+    }
+
+    function renderRunes() {
+      const grid = document.getElementById('runeGrid');
+      grid.innerHTML = '';
+
+      const filteredRunes = currentFilter 
+        ? runesData.filter(r => r.rarity === currentFilter)
+        : runesData;
+
+      filteredRunes.forEach(rune => {
+        const isEquipped = equippedSlots.some(slot => slot && slot.id === rune.id);
+        
+        const runeEl = document.createElement('div');
+        runeEl.className = `rune-item rarity-${rune.rarity} ${isEquipped ? 'equipped' : ''}`;
+        runeEl.innerText = rune.name;
+        
+        runeEl.onclick = () => {
+          if (!isEquipped) {
+            equipRune(rune);
+          }
+        };
+
+        grid.appendChild(runeEl);
+      });
+    }
+
+    function toggleFilter(rarity) {
+      if (currentFilter === rarity) {
+        currentFilter = null;
+      } else {
+        currentFilter = rarity;
+      }
+
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        if (btn.getAttribute('data-type') === currentFilter) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      renderRunes();
+    }
+
+    // 裝備符文 (防呆)
+    function equipRune(rune) {
+      if (rune.name === "壓縮" || rune.name === "猛瑪") {
+        const targetConflict = rune.name === "壓縮" ? "猛瑪" : "壓縮";
+        const hasConflict = equippedSlots.some(slot => slot && slot.name === targetConflict);
+        if (hasConflict) {
+          alert(`「壓縮」與「猛瑪」不能同時裝備！請先卸下「${targetConflict}」。`);
+          return;
+        }
+      }
+
+      const emptyIndex = equippedSlots.findIndex(slot => slot === null);
+      if (emptyIndex === -1) {
+        alert("裝備槽已滿！請先卸下其他符文。");
+        return;
+      }
+
+      equippedSlots[emptyIndex] = rune;
+      updateSlotsUI();
+      renderRunes();
+      calculateFinalStats();
+    }
+
+    function unequipRune(index) {
+      if (equippedSlots[index]) {
+        equippedSlots[index] = null;
+        updateSlotsUI();
+        renderRunes();
+        calculateFinalStats();
+      }
+    }
+
+    function updateSlotsUI() {
+      const slots = document.querySelectorAll('.slot');
+      
+      equippedSlots.forEach((rune, index) => {
+        const slotEl = slots[index];
+        if (rune) {
+          slotEl.classList.add('filled');
+          slotEl.innerHTML = `<div class="rune-item rarity-${rune.rarity}" style="width:100%; height:100%; font-size:11px;">${rune.name}</div>`;
+        } else {
+          slotEl.classList.remove('filled');
+          slotEl.innerHTML = '';
+        }
+      });
+    }
+
+    // 格式化效果文字
+    function getRuneEffectText(runeName, level) {
+      const config = runeStatsConfig[runeName];
+      if (!config || !config[level]) return "特殊效果 (未設定數值)";
+      const data = config[level];
+      let effects = [];
+      if (data.flatAtk) effects.push(`攻擊+${data.flatAtk}`);
+      if (data.flatHp) effects.push(`血量+${data.flatHp}`);
+      if (data.atkPct) effects.push(`攻擊${data.atkPct > 0 ? '+' : ''}${(data.atkPct * 100).toFixed(1)}%`);
+      if (data.hpPct) effects.push(`血量${data.hpPct > 0 ? '+' : ''}${(data.hpPct * 100).toFixed(1)}%`);
+      if (data.desc) effects.push(data.desc);
+      return effects.join(" / ");
+    }
+
+    // 核心計算與已選清單更新
+    function calculateFinalStats() {
+      let runeFlatAtk = 0;
+      let runeFlatHp = 0;
+      let runeAtkPct = 0;
+      let runeHpPct = 0;
+
+      const equippedListEl = document.getElementById('equippedList');
+      equippedListEl.innerHTML = '';
+
+      let equippedCount = 0;
+
+      equippedSlots.forEach((rune, index) => {
+        if (rune) {
+          equippedCount++;
+          const lvl = slotLevels[index];
+          const runeStatConfig = runeStatsConfig[rune.name];
+
+          if (runeStatConfig && runeStatConfig[lvl]) {
+            const data = runeStatConfig[lvl];
+            if (data.flatAtk) runeFlatAtk += data.flatAtk;
+            if (data.flatHp) runeFlatHp += data.flatHp;
+            if (data.atkPct) runeAtkPct += data.atkPct;
+            if (data.hpPct) runeHpPct += data.hpPct;
+          }
+
+          // 新增至「已選擇符文狀態」UI
+          const itemEl = document.createElement('div');
+          itemEl.className = 'equipped-item';
+          itemEl.innerHTML = `
+            <div class="equipped-item-info">
+              <span class="equipped-slot-tag">${index + 1}</span>
+              <span><b>${rune.name}</b> (Lv.${lvl})</span>
+            </div>
+            <span class="equipped-effect">${getRuneEffectText(rune.name, lvl)}</span>
+            <span class="remove-btn" onclick="unequipRune(${index})">卸下</span>
+          `;
+          equippedListEl.appendChild(itemEl);
+        }
+      });
+
+      if (equippedCount === 0) {
+        equippedListEl.innerHTML = '<div style="color: #666; font-size: 11px; text-align: center; padding: 4px;">尚未裝備任何符文</div>';
+      }
+      document.getElementById('equippedCount').innerText = `(${equippedCount}/5)`;
+
+      // 1. 計算攻擊力
+      const baseAtkSum = playerStats.attack + playerStats.constellationAttack + runeFlatAtk;
+      const finalAtk = Math.round(baseAtkSum * (1 + runeAtkPct));
+
+      // 2. 計算生命值
+      const baseHpSum = playerStats.hp + playerStats.constellationHp + runeFlatHp;
+      const finalHp = Math.round(baseHpSum * (1 + runeHpPct));
+
+      // 更新結果 UI
+      document.getElementById('finalAttackVal').innerText = finalAtk.toLocaleString();
+      document.getElementById('finalHpVal').innerText = finalHp.toLocaleString();
+
+      // 更新計算過程 UI
+      document.getElementById('atkFormulaDetails').innerHTML = 
+        `<span class="highlight-atk">[攻擊]</span> (${playerStats.attack} + ${playerStats.constellationAttack} + ${runeFlatAtk}) × (1 + ${(runeAtkPct * 100).toFixed(1)}%) = <b>${finalAtk.toLocaleString()}</b>`;
+      
+      document.getElementById('hpFormulaDetails').innerHTML = 
+        `<span class="highlight-hp">[生命]</span> (${playerStats.hp} + ${playerStats.constellationHp} + ${runeFlatHp}) × (1 + ${(runeHpPct * 100).toFixed(1)}%) = <b>${finalHp.toLocaleString()}</b>`;
+    }
+  </script>
+</body>
+</html>
