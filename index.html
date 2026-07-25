@@ -128,7 +128,7 @@
       border-color: #76c720;
     }
 
-    /* 數值輸入面板區塊 */
+    /* 數值輸入與造型面板區塊 */
     .stats-panel {
       width: 110%;
       background-color: var(--panel-bg);
@@ -153,7 +153,7 @@
       font-weight: bold;
     }
 
-    .stat-input {
+    .stat-input, .skin-select {
       background-color: #121218;
       border: 1.5px solid var(--border-color);
       border-radius: 6px;
@@ -165,7 +165,7 @@
       transition: border-color 0.2s;
     }
 
-    .stat-input:focus {
+    .stat-input:focus, .skin-select:focus {
       border-color: #76c720;
     }
 
@@ -176,6 +176,17 @@
     }
     .stat-input[type=number] {
       -moz-appearance: textfield;
+    }
+
+    /* 造型選擇分隔線 */
+    .skin-section-title {
+      grid-column: span 2;
+      font-size: 12px;
+      font-weight: bold;
+      color: #76c720;
+      border-top: 1px solid var(--border-color);
+      padding-top: 6px;
+      margin-top: 2px;
     }
 
     /* 最終計算結果展示面板 */
@@ -283,6 +294,39 @@
     }
     .remove-btn:hover {
       background-color: rgba(255, 82, 82, 0.25);
+    }
+
+    /* 觸發能力恢復量計算面板 */
+    .trigger-effect-panel {
+      width: 100%;
+      background-color: #1a2228;
+      border: 1.5px solid #00bcd4;
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 0 8px rgba(0, 188, 212, 0.2);
+    }
+
+    .trigger-title {
+      font-size: 12px;
+      font-weight: bold;
+      color: #00bcd4;
+      border-bottom: 1px dashed #00bcd4;
+      padding-bottom: 4px;
+    }
+
+    .trigger-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #d0e8f0;
+    }
+
+    .trigger-val {
+      color: #00e5ff;
+      font-weight: bold;
     }
 
     /* 計算過程面板 */
@@ -460,7 +504,7 @@
 
     <div class="hint">點擊符文可裝備，點擊上方已裝備符文可拆卸</div>
 
-    <!-- 數值輸入區塊 -->
+    <!-- 數值輸入與造型加成面板區塊 -->
     <div class="stats-panel">
       <div class="stat-input-group">
         <label for="attackInput">基礎攻擊力</label>
@@ -477,6 +521,29 @@
       <div class="stat-input-group">
         <label for="astroHpInput">星座血量</label>
         <input type="number" id="astroHpInput" class="stat-input" placeholder="0" min="0" oninput="validateNumber(this, 'constellationHp')">
+      </div>
+
+      <!-- 新增造型加成選單 -->
+      <div class="skin-section-title">造型加成設定</div>
+      <div class="stat-input-group">
+        <label for="eggSkinSelect">皮蛋造型 (加成%攻擊)</label>
+        <select id="eggSkinSelect" class="skin-select" onchange="updateSkinBonus('atk', this.value)">
+          <option value="0.0">0.0%</option>
+          <option value="0.002">0.2%</option>
+          <option value="0.005">0.5%</option>
+          <option value="0.01">1.0%</option>
+          <option value="0.05">5.0%</option>
+        </select>
+      </div>
+      <div class="stat-input-group">
+        <label for="nestSkinSelect">巢造型 (加成%血量)</label>
+        <select id="nestSkinSelect" class="skin-select" onchange="updateSkinBonus('hp', this.value)">
+          <option value="0.0">0.0%</option>
+          <option value="0.002">0.2%</option>
+          <option value="0.005">0.5%</option>
+          <option value="0.01">1.0%</option>
+          <option value="0.05">5.0%</option>
+        </select>
       </div>
     </div>
 
@@ -500,6 +567,19 @@
       <div class="result-item">
         <span class="result-title">最終總生命值</span>
         <span class="result-value" id="finalHpVal">0</span>
+      </div>
+    </div>
+
+    <!-- 觸發類符文單次發動實際恢復量面板 -->
+    <div class="trigger-effect-panel">
+      <div class="trigger-title">符文實戰發動單次恢復估算</div>
+      <div class="trigger-row">
+        <span>🩸 吸血符文發動：</span>
+        <span class="trigger-val" id="vampHealVal">未裝備吸血符文</span>
+      </div>
+      <div class="trigger-row">
+        <span>💚 治癒符文發動：</span>
+        <span class="trigger-val" id="healRuneVal">未裝備治癒符文</span>
       </div>
     </div>
 
@@ -545,8 +625,54 @@
       { id: 11, name: "雷擊", rarity: "傳說" }
     ];
 
-    // 全符文等級數值設定 (6~31 級可以直接在對應屬性後繼續擴充)
+    // 全符文等級數值設定 (包含吸血與治癒的獨立 ratio 恢復趴數)
     const runeStatsConfig = {
+      // 普通級 (治癒)
+      "治癒": {
+        1: { ratio: 0.010, desc: "被擊時5%機率恢復最大生命1.0%" },
+        2: { ratio: 0.011, desc: "被擊時5%機率恢復最大生命1.1%" },
+        3: { ratio: 0.012, desc: "被擊時5%機率恢復最大生命1.2%" },
+        4: { ratio: 0.013, desc: "被擊時5%機率恢復最大生命1.3%" },
+        5: { ratio: 0.014, desc: "被擊時5%機率恢復最大生命1.4%" },
+        6: { ratio: 0.020, desc: "被擊時5%機率恢復最大生命2.0%" },
+        7: { ratio: 0.021, desc: "被擊時5%機率恢復最大生命2.1%" },
+        8: { ratio: 0.022, desc: "被擊時5%機率恢復最大生命2.2%" },
+        9: { ratio: 0.023, desc: "被擊時5%機率恢復最大生命2.3%" },
+        10: { ratio: 0.024, desc: "被擊時5%機率恢復最大生命2.4%" },
+        11: { ratio: 0.025, desc: "被擊時8%機率恢復最大生命2.5%" },
+        12: { ratio: 0.026, desc: "被擊時8%機率恢復最大生命2.6%" },
+        13: { ratio: 0.027, desc: "被擊時8%機率恢復最大生命2.7%" },
+        14: { ratio: 0.028, desc: "被擊時8%機率恢復最大生命2.8%" },
+        15: { ratio: 0.029, desc: "被擊時8%機率恢復最大生命2.9%" },
+        16: { ratio: 0.035, desc: "被擊時8%機率恢復最大生命3.5%" },
+        17: { ratio: 0.036, desc: "被擊時8%機率恢復最大生命3.6%" },
+        18: { ratio: 0.037, desc: "被擊時8%機率恢復最大生命3.7%" },
+        19: { ratio: 0.038, desc: "被擊時8%機率恢復最大生命3.8%" },
+        20: { ratio: 0.039, desc: "被擊時8%機率恢復最大生命3.9%" },
+        21: { ratio: 0.040, desc: "被擊時10%機率恢復最大生命4.0%" },
+        22: { ratio: 0.041, desc: "被擊時10%機率恢復最大生命4.1%" },
+        23: { ratio: 0.042, desc: "被擊時10%機率恢復最大生命4.2%" },
+        24: { ratio: 0.043, desc: "被擊時10%機率恢復最大生命4.3%" },
+        25: { ratio: 0.044, desc: "被擊時10%機率恢復最大生命4.4%" },
+        26: { ratio: 0.060, desc: "被擊時10%機率恢復最大生命6.0%" },
+        27: { ratio: 0.062, desc: "被擊時10%機率恢復最大生命6.2%" },
+        28: { ratio: 0.064, desc: "被擊時10%機率恢復最大生命6.4%" },
+        29: { ratio: 0.066, desc: "被擊時10%機率恢復最大生命6.6%" },
+        30: { ratio: 0.068, desc: "被擊時10%機率恢復最大生命6.8%" },
+        31: { ratio: 0.080, desc: "被擊時10%機率恢復最大生命8.0%" }
+      },
+
+      // 稀有級 (堅硬2)
+      "堅硬2": {
+        1: { desc: "受擊時，傷害減少30" },2: { desc: "受擊時，傷害減少32" },3: { desc: "受擊時，傷害減少34" },4: { desc: "受擊時，傷害減少36" },5: { desc: "受擊時，傷害減少38" },
+        6: { desc: "受擊時，傷害減少40" },7: { desc: "受擊時，傷害減少42" },8: { desc: "受擊時，傷害減少44" },9: { desc: "受擊時，傷害減少46" },10: { desc: "受擊時，傷害減少48" },
+        11: { desc: "受擊時，傷害減少50" },12: { desc: "受擊時，傷害減少52" },13: { desc: "受擊時，傷害減少54" },14: { desc: "受擊時，傷害減少56" },15: { desc: "受擊時，傷害減少58" },
+        16: { desc: "受擊時，傷害減少60" },17: { desc: "受擊時，傷害減少62" },18: { desc: "受擊時，傷害減少64" },19: { desc: "受擊時，傷害減少66" },20: { desc: "受擊時，傷害減少68" },
+        21: { desc: "受擊時，傷害減少70" },22: { desc: "受擊時，傷害減少72" },23: { desc: "受擊時，傷害減少74" },24: { desc: "受擊時，傷害減少76" },25: { desc: "受擊時，傷害减少78" },
+        26: { desc: "受擊時，傷害減少80" },27: { desc: "受擊時，傷害減少82" },28: { desc: "受擊時，傷害減少84" },29: { desc: "受擊時，傷害減少86" },30: { desc: "受擊時，傷害减少88" },
+        31: { desc: "受擊時，傷害减少90" }
+      },
+
       // 史詩級
       "體力3": {
         1: { flatHp: 875 }, 2: { flatHp: 900 }, 3: { flatHp: 925 }, 4: { flatHp: 950 }, 5: { flatHp: 975 },
@@ -585,15 +711,15 @@
         31: { atkPct: 0.450, hpPct: -0.25 }
       },
 
-      // 獨特級 (吸血、強打、屏障)
+      // 獨特級
       "吸血": {
-        1: { desc: "15%機率恢復30%攻擊生命" },2: { desc: "15%機率恢復32%攻擊生命" },3: { desc: "15%機率恢復34%攻擊生命" },4: { desc: "15%機率恢復36%攻擊生命" },5: { desc: "15%機率恢復38%攻擊生命" },
-        6: { desc: "15%機率恢復45%攻擊生命" },7: { desc: "15%機率恢復47%攻擊生命" },8: { desc: "15%機率恢復49%攻擊生命" },9: { desc: "15%機率恢復51%攻擊生命" },10: { desc: "15%機率恢復53%攻擊生命" },
-        11: { desc: "20%機率恢復55%攻擊生命" },12: { desc: "20%機率恢復57%攻擊生命" },13: { desc: "20%機率恢復59%攻擊生命" },14: { desc: "20%機率恢復61%攻擊生命" },15: { desc: "20%機率恢復63%攻擊生命" },
-        16: { desc: "20%機率恢復70%攻擊生命" },17: { desc: "20%機率恢復72%攻擊生命" },18: { desc: "20%機率恢復74%攻擊生命" },19: { desc: "20%機率恢復76%攻擊生命" },20: { desc: "20%機率恢復78%攻擊生命" },
-        21: { desc: "25%機率恢復80%攻擊生命" },22: { desc: "25%機率恢復82%攻擊生命" },23: { desc: "25%機率恢復84%攻擊生命" },24: { desc: "25%機率恢復86%攻擊生命" },25: { desc: "25%機率恢復88%攻擊生命" },
-        26: { desc: "25%機率恢復95%攻擊生命" },27: { desc: "25%機率恢復97%攻擊生命" },28: { desc: "25%機率恢復99%攻擊生命" },29: { desc: "25%機率恢復101%攻擊生命" },30: { desc: "25%機率恢復103%攻擊生命" },
-        31: { desc: "30%機率恢復110%攻擊生命" }
+        1: { ratio: 0.30, desc: "15%機率恢復30%攻擊生命" },2: { ratio: 0.32, desc: "15%機率恢復32%攻擊生命" },3: { ratio: 0.34, desc: "15%機率恢復34%攻擊生命" },4: { ratio: 0.36, desc: "15%機率恢復36%攻擊生命" },5: { ratio: 0.38, desc: "15%機率恢復38%攻擊生命" },
+        6: { ratio: 0.45, desc: "15%機率恢復45%攻擊生命" },7: { ratio: 0.47, desc: "15%機率恢復47%攻擊生命" },8: { ratio: 0.49, desc: "15%機率恢復49%攻擊生命" },9: { ratio: 0.51, desc: "15%機率恢復51%攻擊生命" },10: { ratio: 0.53, desc: "15%機率恢復53%攻擊生命" },
+        11: { ratio: 0.55, desc: "20%機率恢復55%攻擊生命" },12: { ratio: 0.57, desc: "20%機率恢復57%攻擊生命" },13: { ratio: 0.59, desc: "20%機率恢復59%攻擊生命" },14: { ratio: 0.61, desc: "20%機率恢復61%攻擊生命" },15: { ratio: 0.63, desc: "20%機率恢復63%攻擊生命" },
+        16: { ratio: 0.70, desc: "20%機率恢復70%攻擊生命" },17: { ratio: 0.72, desc: "20%機率恢復72%攻擊生命" },18: { ratio: 0.74, desc: "20%機率恢復74%攻擊生命" },19: { ratio: 0.76, desc: "20%機率恢復76%攻擊生命" },20: { ratio: 0.78, desc: "20%機率恢復78%攻擊生命" },
+        21: { ratio: 0.80, desc: "25%機率恢復80%攻擊生命" },22: { ratio: 0.82, desc: "25%機率恢復82%攻擊生命" },23: { ratio: 0.84, desc: "25%機率恢復84%攻擊生命" },24: { ratio: 0.86, desc: "25%機率恢復86%攻擊生命" },25: { ratio: 0.88, desc: "25%機率恢復88%攻擊生命" },
+        26: { ratio: 0.95, desc: "25%機率恢復95%攻擊生命" },27: { ratio: 0.97, desc: "25%機率恢復97%攻擊生命" },28: { ratio: 0.99, desc: "25%機率恢復99%攻擊生命" },29: { ratio: 1.01, desc: "25%機率恢復101%攻擊生命" },30: { ratio: 1.03, desc: "25%機率恢復103%攻擊生命" },
+        31: { ratio: 1.10, desc: "30%機率恢復110%攻擊生命" }
       },
       "強打": {
         1: { atkPct: 0.070 },2: { atkPct: 0.072 },3: { atkPct: 0.074 },4: { atkPct: 0.076 },5: { atkPct: 0.078 },
@@ -603,7 +729,6 @@
         21: { atkPct: 0.230 },22: { atkPct: 0.235 },23: { atkPct: 0.240 },24: { atkPct: 0.245 },25: { atkPct: 0.250 },
         26: { atkPct: 0.310 },27: { atkPct: 0.315 },28: { atkPct: 0.320 },29: { atkPct: 0.325 },30: { atkPct: 0.330 },
         31: { atkPct: 0.400 }
-
       },
       "屏障": {
         1: { hpPct: 0.175 },2: { hpPct: 0.180 },3: { hpPct: 0.185 },4: { hpPct: 0.190 },5: { hpPct: 0.195 },
@@ -613,8 +738,74 @@
         21: { hpPct: 0.575 },22: { hpPct: 0.588 },23: { hpPct: 0.600 },24: { hpPct: 0.613 },25: { hpPct: 0.625 },
         26: { hpPct: 0.775 },27: { hpPct: 0.788 },28: { hpPct: 0.800 },29: { hpPct: 0.813 },30: { hpPct: 0.825 },
         31: { hpPct: 1.000 }
-        
-        
+      },
+
+      // 傳說級 (隕石、雷擊)
+      "隕石": {
+        1: { atkPct: 0.02, hpPct: 0.02, desc: "50%機率對當前格子上所有敵人造成15.0%技能傷害" },
+        2: { atkPct: 0.02, hpPct: 0.02, desc: "50%機率對當前格子上所有敵人造成16.0%技能傷害" },
+        3: { atkPct: 0.02, hpPct: 0.02, desc: "50%機率對當前格子上所有敵人造成17.0%技能傷害" },
+        4: { atkPct: 0.02, hpPct: 0.02, desc: "50%機率對當前格子上所有敵人造成18.0%技能傷害" },
+        5: { atkPct: 0.02, hpPct: 0.02, desc: "50%機率對當前格子上所有敵人造成19.0%技能傷害" },
+        6: { atkPct: 0.02, hpPct: 0.02, desc: "55%機率對當前格子上所有敵人造成20.0%技能傷害" },
+        7: { atkPct: 0.02, hpPct: 0.02, desc: "55%機率對當前格子上所有敵人造成21.0%技能傷害" },
+        8: { atkPct: 0.02, hpPct: 0.02, desc: "55%機率對當前格子上所有敵人造成22.0%技能傷害" },
+        9: { atkPct: 0.02, hpPct: 0.02, desc: "55%機率對當前格子上所有敵人造成23.0%技能傷害" },
+        10: { atkPct: 0.02, hpPct: 0.02, desc: "55%機率對當前格子上所有敵人造成24.0%技能傷害" },
+        11: { atkPct: 0.04, hpPct: 0.04, desc: "55%機率對當前格子上所有敵人造成40.0%技能傷害" },
+        12: { atkPct: 0.04, hpPct: 0.04, desc: "55%機率對當前格子上所有敵人造成41.0%技能傷害" },
+        13: { atkPct: 0.04, hpPct: 0.04, desc: "55%機率對當前格子上所有敵人造成42.0%技能傷害" },
+        14: { atkPct: 0.04, hpPct: 0.04, desc: "55%機率對當前格子上所有敵人造成43.0%技能傷害" },
+        15: { atkPct: 0.04, hpPct: 0.04, desc: "55%機率對當前格子上所有敵人造成44.0%技能傷害" },
+        16: { atkPct: 0.04, hpPct: 0.04, desc: "55%機率對當前格子上所有敵人造成50.0%技能傷害" },
+        17: { atkPct: 0.04, hpPct: 0.04, desc: "55%機率對當前格子上所有敵人造成51.0%技能傷害" },
+        18: { atkPct: 0.04, hpPct: 0.04, desc: "55%機率對當前格子上所有敵人造成52.0%技能傷害" },
+        19: { atkPct: 0.04, hpPct: 0.04, desc: "55%機率對當前格子上所有敵人造成53.0%技能傷害" },
+        20: { atkPct: 0.04, hpPct: 0.04, desc: "55%機率對當前格子上所有敵人造成54.0%技能傷害" },
+        21: { atkPct: 0.07, hpPct: 0.07, desc: "60%機率對當前格子上所有敵人造成65.0%技能傷害、對周圍格子上所有敵人造成10.0%額外技能傷害" },
+        22: { atkPct: 0.07, hpPct: 0.07, desc: "60%機率對當前格子上所有敵人造成66.0%技能傷害、對周圍格子上所有敵人造成11.0%額外技能傷害" },
+        23: { atkPct: 0.07, hpPct: 0.07, desc: "60%機率對當前格子上所有敵人造成67.0%技能傷害、對周圍格子上所有敵人造成12.0%額外技能傷害" },
+        24: { atkPct: 0.07, hpPct: 0.07, desc: "60%機率對當前格子上所有敵人造成68.0%技能傷害、對周圍格子上所有敵人造成13.0%額外技能傷害" },
+        25: { atkPct: 0.07, hpPct: 0.07, desc: "60%機率對當前格子上所有敵人造成69.0%技能傷害、對周圍格子上所有敵人造成14.0%額外技能傷害" },
+        26: { atkPct: 0.07, hpPct: 0.07, desc: "65%機率對當前格子上所有敵人造成70.0%技能傷害、對周圍格子上所有敵人造成18.0%額外技能傷害" },
+        27: { atkPct: 0.07, hpPct: 0.07, desc: "65%機率對當前格子上所有敵人造成71.0%技能傷害、對周圍格子上所有敵人造成19.0%額外技能傷害" },
+        28: { atkPct: 0.07, hpPct: 0.07, desc: "65%機率對當前格子上所有敵人造成72.0%技能傷害、對周圍格子上所有敵人造成20.0%額外技能傷害" },
+        29: { atkPct: 0.07, hpPct: 0.07, desc: "65%機率對當前格子上所有敵人造成73.0%技能傷害、對周圍格子上所有敵人造成21.0%額外技能傷害" },
+        30: { atkPct: 0.07, hpPct: 0.07, desc: "65%機率對當前格子上所有敵人造成74.0%技能傷害、對周圍格子上所有敵人造成22.0%額外技能傷害" },
+        31: { atkPct: 0.10, hpPct: 0.10, desc: "65%機率對當前格子上所有敵人造成80.0%技能傷害、對周圍格子上所有敵人造成25.0%額外技能傷害" }
+      },
+      "雷擊": {
+        1: { atkPct: 0.02, hpPct: 0.02, desc: "40%機率對敵人單體造成60.0%技能傷害" },
+        2: { atkPct: 0.02, hpPct: 0.02, desc: "40%機率對敵人單體造成61.0%技能傷害" },
+        3: { atkPct: 0.02, hpPct: 0.02, desc: "40%機率對敵人單體造成62.0%技能傷害" },
+        4: { atkPct: 0.02, hpPct: 0.02, desc: "40%機率對敵人單體造成63.0%技能傷害" },
+        5: { atkPct: 0.02, hpPct: 0.02, desc: "40%機率對敵人單體造成64.0%技能傷害" },
+        6: { atkPct: 0.02, hpPct: 0.02, desc: "45%機率對敵人單體造成75.0%技能傷害" },
+        7: { atkPct: 0.02, hpPct: 0.02, desc: "45%機率對敵人單體造成76.0%技能傷害" },
+        8: { atkPct: 0.02, hpPct: 0.02, desc: "45%機率對敵人單體造成77.0%技能傷害" },
+        9: { atkPct: 0.02, hpPct: 0.02, desc: "45%機率對敵人單體造成78.0%技能傷害" },
+        10: { atkPct: 0.02, hpPct: 0.02, desc: "45%機率對敵人單體造成79.0%技能傷害" },
+        11: { atkPct: 0.04, hpPct: 0.04, desc: "50%機率對敵人單體造成100.0%技能傷害" },
+        12: { atkPct: 0.04, hpPct: 0.04, desc: "50%機率對敵人單體造成101.0%技能傷害" },
+        13: { atkPct: 0.04, hpPct: 0.04, desc: "50%機率對敵人單體造成102.0%技能傷害" },
+        14: { atkPct: 0.04, hpPct: 0.04, desc: "50%機率對敵人單體造成103.0%技能傷害" },
+        15: { atkPct: 0.04, hpPct: 0.04, desc: "50%機率對敵人單體造成104.0%技能傷害" },
+        16: { atkPct: 0.04, hpPct: 0.04, desc: "50%機率對敵人單體造成124.0%技能傷害" },
+        17: { atkPct: 0.04, hpPct: 0.04, desc: "50%機率對敵人單體造成125.0%技能傷害" },
+        18: { atkPct: 0.04, hpPct: 0.04, desc: "50%機率對敵人單體造成126.0%技能傷害" },
+        19: { atkPct: 0.04, hpPct: 0.04, desc: "50%機率對敵人單體造成127.0%技能傷害" },
+        20: { atkPct: 0.04, hpPct: 0.04, desc: "50%機率對敵人單體造成128.0%技能傷害" },
+        21: { atkPct: 0.07, hpPct: 0.07, desc: "60%機率對敵人單體造成135.0%技能傷害、如果對手血量低於15.0%有20.0%的機率立即死亡" },
+        22: { atkPct: 0.07, hpPct: 0.07, desc: "60%機率對敵人單體造成136.0%技能傷害、如果對手血量低於16.0%有20.0%的機率立即死亡" },
+        23: { atkPct: 0.07, hpPct: 0.07, desc: "60%機率對敵人單體造成137.0%技能傷害、如果對手血量低於17.0%有20.0%的機率立即死亡" },
+        24: { atkPct: 0.07, hpPct: 0.07, desc: "60%機率對敵人單體造成138.0%技能傷害、如果對手血量低於18.0%有20.0%的機率立即死亡" },
+        25: { atkPct: 0.07, hpPct: 0.07, desc: "60%機率對敵人單體造成139.0%技能傷害、如果對手血量低於19.0%有20.0%的機率立即死亡" },
+        26: { atkPct: 0.07, hpPct: 0.07, desc: "65%機率對敵人單體造成150.0%技能傷害、如果對手血量低於20.0%有25.0%的機率立即死亡" },
+        27: { atkPct: 0.07, hpPct: 0.07, desc: "65%機率對敵人單體造成151.0%技能傷害、如果對手血量低於21.0%有25.0%的機率立即死亡" },
+        28: { atkPct: 0.07, hpPct: 0.07, desc: "65%機率對敵人單體造成152.0%技能傷害、如果對手血量低於22.0%有25.0%的機率立即死亡" },
+        29: { atkPct: 0.07, hpPct: 0.07, desc: "65%機率對敵人單體造成153.0%技能傷害、如果對手血量低於23.0%有25.0%的機率立即死亡" },
+        30: { atkPct: 0.07, hpPct: 0.07, desc: "65%機率對敵人單體造成154.0%技能傷害、如果對手血量低於24.0%有25.0%的機率立即死亡" },
+        31: { atkPct: 0.10, hpPct: 0.10, desc: "65%機率對敵人單體造成170.0%技能傷害、如果對手血量低於30.0%有30.0%的機率立即死亡" }
       }
     };
 
@@ -630,6 +821,12 @@
       constellationHp: 0
     };
 
+    // 造型加成 (預設 0.0)
+    let skinBonus = {
+      atk: 0.0,
+      hp: 0.0
+    };
+
     window.onload = () => {
       initLevelSelects();
       renderRunes();
@@ -639,6 +836,12 @@
     function validateNumber(input, key) {
       input.value = input.value.replace(/[^0-9]/g, '');
       playerStats[key] = input.value ? parseInt(input.value, 10) : 0;
+      calculateFinalStats();
+    }
+
+    // 更新造型加成
+    function updateSkinBonus(type, value) {
+      skinBonus[type] = parseFloat(value);
       calculateFinalStats();
     }
 
@@ -771,6 +974,10 @@
       let runeAtkPct = 0;
       let runeHpPct = 0;
 
+      // 紀錄觸發類符文之參數
+      let vampInfo = null; // 吸血
+      let healInfo = null; // 治癒
+
       const equippedListEl = document.getElementById('equippedList');
       equippedListEl.innerHTML = '';
 
@@ -788,6 +995,13 @@
             if (data.flatHp) runeFlatHp += data.flatHp;
             if (data.atkPct) runeAtkPct += data.atkPct;
             if (data.hpPct) runeHpPct += data.hpPct;
+
+            if (rune.name === "吸血") {
+              vampInfo = { level: lvl, ratio: data.ratio || 0 };
+            }
+            if (rune.name === "治癒") {
+              healInfo = { level: lvl, ratio: data.ratio || 0 };
+            }
           }
 
           // 新增至「已選擇符文狀態」UI
@@ -810,24 +1024,43 @@
       }
       document.getElementById('equippedCount').innerText = `(${equippedCount}/5)`;
 
-      // 1. 計算攻擊力
-      const baseAtkSum = playerStats.attack + playerStats.constellationAttack + runeFlatAtk;
-      const finalAtk = Math.round(baseAtkSum * (1 + runeAtkPct));
+      // 加上皮蛋/巢造型加成趴數
+      const totalAtkPct = runeAtkPct + skinBonus.atk;
+      const totalHpPct = runeHpPct + skinBonus.hp;
 
-      // 2. 計算生命值
+      // 1. 計算總攻擊力 = (基礎攻擊 + 星座攻擊 + 符文固定攻擊) * (1 + 符文攻擊% + 皮蛋造型%)
+      const baseAtkSum = playerStats.attack + playerStats.constellationAttack + runeFlatAtk;
+      const finalAtk = Math.round(baseAtkSum * (1 + totalAtkPct));
+
+      // 2. 計算總生命值 = (基礎血量 + 星座血量 + 符文固定血量) * (1 + 符文血量% + 巢造型%)
       const baseHpSum = playerStats.hp + playerStats.constellationHp + runeFlatHp;
-      const finalHp = Math.round(baseHpSum * (1 + runeHpPct));
+      const finalHp = Math.round(baseHpSum * (1 + totalHpPct));
 
       // 更新結果 UI
       document.getElementById('finalAttackVal').innerText = finalAtk.toLocaleString();
       document.getElementById('finalHpVal').innerText = finalHp.toLocaleString();
 
+      // 更新發動單次恢復估算
+      if (vampInfo) {
+        const vampHealAmount = Math.round(finalAtk * vampInfo.ratio);
+        document.getElementById('vampHealVal').innerText = `恢復 ${vampHealAmount.toLocaleString()} 生命 (Lv.${vampInfo.level})`;
+      } else {
+        document.getElementById('vampHealVal').innerText = "未裝備吸血符文";
+      }
+
+      if (healInfo) {
+        const healRuneAmount = Math.round(finalHp * healInfo.ratio);
+        document.getElementById('healRuneVal').innerText = `恢復 ${healRuneAmount.toLocaleString()} 生命 (Lv.${healInfo.level})`;
+      } else {
+        document.getElementById('healRuneVal').innerText = "未裝備治癒符文";
+      }
+
       // 更新計算過程 UI
       document.getElementById('atkFormulaDetails').innerHTML = 
-        `<span class="highlight-atk">[攻擊]</span> (${playerStats.attack} + ${playerStats.constellationAttack} + ${runeFlatAtk}) × (1 + ${(runeAtkPct * 100).toFixed(1)}%) = <b>${finalAtk.toLocaleString()}</b>`;
+        `<span class="highlight-atk">[攻擊]</span> (${playerStats.attack} + ${playerStats.constellationAttack} + ${runeFlatAtk}) × (1 + ${(totalAtkPct * 100).toFixed(1)}%) = <b>${finalAtk.toLocaleString()}</b>`;
       
       document.getElementById('hpFormulaDetails').innerHTML = 
-        `<span class="highlight-hp">[生命]</span> (${playerStats.hp} + ${playerStats.constellationHp} + ${runeFlatHp}) × (1 + ${(runeHpPct * 100).toFixed(1)}%) = <b>${finalHp.toLocaleString()}</b>`;
+        `<span class="highlight-hp">[生命]</span> (${playerStats.hp} + ${playerStats.constellationHp} + ${runeFlatHp}) × (1 + ${(totalHpPct * 100).toFixed(1)}%) = <b>${finalHp.toLocaleString()}</b>`;
     }
   </script>
 </body>
