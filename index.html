@@ -30,18 +30,47 @@
       color: #fff;
       font-family: Arial, sans-serif;
       display: flex;
-      flex-direction: column;
-      align-items: center;
+      justify-content: center;
+      align-items: flex-start;
       min-height: 100vh;
     }
 
-    .container {
+    /* 主容器：採用左右雙欄 Flex 佈局 */
+    .main-wrapper {
+      display: flex;
+      gap: 24px;
       width: 100%;
+      max-width: 900px;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    /* 左欄：符文槽位與選單清單 */
+    .left-column {
+      flex: 1;
       max-width: 420px;
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 16px;
+    }
+
+    /* 右欄：數值輸入與計算結果 */
+    .right-column {
+      flex: 1;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* 螢幕較小時自動轉為單欄 */
+    @media (max-width: 820px) {
+      .main-wrapper {
+        flex-direction: column;
+        align-items: center;
+      }
     }
 
     /* 頂部：5個放置槽 (環狀/五角佈局) */
@@ -130,7 +159,7 @@
 
     /* 數值輸入與造型面板區塊 */
     .stats-panel {
-      width: 110%;
+      width: 100%;
       background-color: var(--panel-bg);
       border: 2px solid var(--border-color);
       border-radius: 12px;
@@ -158,7 +187,7 @@
       border: 1.5px solid var(--border-color);
       border-radius: 6px;
       color: #fff;
-      padding: 6px 10px;
+      padding: 6px 6px;
       font-size: 13px;
       font-weight: bold;
       outline: none;
@@ -354,10 +383,10 @@
     .highlight-atk { color: #fbc02d; font-weight: bold; }
     .highlight-hp { color: #4caf50; font-weight: bold; }
 
-    /* 中間：符文展示板 (固定長寬) */
+    /* 符文展示板 (調整寬度適應左欄) */
     .rune-board {
-      width: 360px;
-      height: 180px;
+      width: 100%;
+      height: 220px;
       background-color: var(--panel-bg);
       border: 3px solid var(--border-color);
       border-radius: 12px;
@@ -474,138 +503,144 @@
 </head>
 <body>
 
-  <div class="container">
-    <!-- 上方 5 個放置槽 -->
-    <div class="slot-container">
-      <div class="slot-wrapper">
-        <div class="slot" data-slot-number="1" onclick="unequipRune(0)"></div>
-        <select class="slot-level-select" onchange="updateSlotLevel(0, this.value)" id="level-slot-0"></select>
-      </div>
-      <div class="slot-wrapper">
-        <div class="slot" data-slot-number="2" onclick="unequipRune(1)"></div>
-        <select class="slot-level-select" onchange="updateSlotLevel(1, this.value)" id="level-slot-1"></select>
-      </div>
-      <div class="slot-wrapper">
-        <div class="slot" data-slot-number="3" onclick="unequipRune(2)"></div>
-        <select class="slot-level-select" onchange="updateSlotLevel(2, this.value)" id="level-slot-2"></select>
-      </div>
-      <div class="slot-wrapper">
-        <div class="slot" data-slot-number="4" onclick="unequipRune(3)"></div>
-        <select class="slot-level-select" onchange="updateSlotLevel(3, this.value)" id="level-slot-3"></select>
-      </div>
-      <div class="slot-wrapper">
-        <div class="slot" data-slot-number="5" onclick="unequipRune(4)"></div>
-        <select class="slot-level-select" onchange="updateSlotLevel(4, this.value)" id="level-slot-4"></select>
+  <div class="main-wrapper">
+    <!-- ===== 左欄：符文槽位與選單區塊 ===== -->
+    <div class="left-column">
+      <!-- 5 個放置槽 -->
+      <div class="slot-container">
+        <div class="slot-wrapper">
+          <div class="slot" data-slot-number="1" onclick="unequipRune(0)"></div>
+          <select class="slot-level-select" onchange="updateSlotLevel(0, this.value)" id="level-slot-0"></select>
+        </div>
+        <div class="slot-wrapper">
+          <div class="slot" data-slot-number="2" onclick="unequipRune(1)"></div>
+          <select class="slot-level-select" onchange="updateSlotLevel(1, this.value)" id="level-slot-1"></select>
+        </div>
+        <div class="slot-wrapper">
+          <div class="slot" data-slot-number="3" onclick="unequipRune(2)"></div>
+          <select class="slot-level-select" onchange="updateSlotLevel(2, this.value)" id="level-slot-2"></select>
+        </div>
+        <div class="slot-wrapper">
+          <div class="slot" data-slot-number="4" onclick="unequipRune(3)"></div>
+          <select class="slot-level-select" onchange="updateSlotLevel(3, this.value)" id="level-slot-3"></select>
+        </div>
+        <div class="slot-wrapper">
+          <div class="slot" data-slot-number="5" onclick="unequipRune(4)"></div>
+          <select class="slot-level-select" onchange="updateSlotLevel(4, this.value)" id="level-slot-4"></select>
+        </div>
+
+        <!-- 中心特效 -->
+        <div class="center-icon"></div>
       </div>
 
-      <!-- 中心特效 -->
-      <div class="center-icon"></div>
-    </div>
+      <div class="hint">點擊符文可裝備，點擊上方已裝備符文可拆卸</div>
 
-    <div class="hint">點擊符文可裝備，點擊上方已裝備符文可拆卸</div>
-
-    <!-- 數值輸入與造型加成面板區塊 -->
-    <div class="stats-panel">
-      <div class="stat-input-group">
-        <label for="attackInput">基礎攻擊力</label>
-        <input type="number" id="attackInput" class="stat-input" placeholder="0" min="0" oninput="validateNumber(this, 'attack')">
-      </div>
-      <div class="stat-input-group">
-        <label for="hpInput">基礎血量</label>
-        <input type="number" id="hpInput" class="stat-input" placeholder="0" min="0" oninput="validateNumber(this, 'hp')">
-      </div>
-      <div class="stat-input-group">
-        <label for="astroAttackInput">星座攻擊力</label>
-        <input type="number" id="astroAttackInput" class="stat-input" placeholder="0" min="0" oninput="validateNumber(this, 'constellationAttack')">
-      </div>
-      <div class="stat-input-group">
-        <label for="astroHpInput">星座血量</label>
-        <input type="number" id="astroHpInput" class="stat-input" placeholder="0" min="0" oninput="validateNumber(this, 'constellationHp')">
+      <!-- 符文展示板 -->
+      <div class="rune-board">
+        <div class="rune-grid" id="runeGrid"></div>
       </div>
 
-      <!-- 新增造型加成選單 -->
-      <div class="skin-section-title">造型加成設定</div>
-      <div class="stat-input-group">
-        <label for="eggSkinSelect">皮蛋造型 (加成%攻擊)</label>
-        <select id="eggSkinSelect" class="skin-select" onchange="updateSkinBonus('atk', this.value)">
-          <option value="0.0">0.0%</option>
-          <option value="0.002">0.2%</option>
-          <option value="0.005">0.5%</option>
-          <option value="0.01">1.0%</option>
-          <option value="0.05">5.0%</option>
-        </select>
-      </div>
-      <div class="stat-input-group">
-        <label for="nestSkinSelect">巢造型 (加成%血量)</label>
-        <select id="nestSkinSelect" class="skin-select" onchange="updateSkinBonus('hp', this.value)">
-          <option value="0.0">0.0%</option>
-          <option value="0.002">0.2%</option>
-          <option value="0.005">0.5%</option>
-          <option value="0.01">1.0%</option>
-          <option value="0.05">5.0%</option>
-        </select>
+      <!-- 品階篩選按鈕 -->
+      <div class="filter-bar">
+        <button class="filter-btn" data-type="普通" onclick="toggleFilter('普通')">普通</button>
+        <button class="filter-btn" data-type="稀有" onclick="toggleFilter('稀有')">稀有</button>
+        <button class="filter-btn" data-type="史詩" onclick="toggleFilter('史詩')">史詩</button>
+        <button class="filter-btn" data-type="獨特" onclick="toggleFilter('獨特')">獨特</button>
+        <button class="filter-btn" data-type="傳說" onclick="toggleFilter('傳說')">傳說</button>
       </div>
     </div>
 
-    <!-- 已選擇符文列表 -->
-    <div class="equipped-panel">
-      <div class="panel-header">
-        <span>已選擇符文狀態</span>
-        <span id="equippedCount" style="color: #a0a0b0; font-weight: normal;">(0/5)</span>
-      </div>
-      <div class="equipped-list" id="equippedList">
-        <div style="color: #666; font-size: 11px; text-align: center; padding: 4px;">尚未裝備任何符文</div>
-      </div>
-    </div>
+    <!-- ===== 右欄：數值輸入與計算結算區塊 ===== -->
+    <div class="right-column">
+      <!-- 數值輸入與造型加成面板區塊 -->
+      <div class="stats-panel">
+        <div class="stat-input-group">
+          <label for="attackInput">基礎攻擊力</label>
+          <input type="number" id="attackInput" class="stat-input" placeholder="0" min="0" oninput="validateNumber(this, 'attack')">
+        </div>
+        <div class="stat-input-group">
+          <label for="hpInput">基礎血量</label>
+          <input type="number" id="hpInput" class="stat-input" placeholder="0" min="0" oninput="validateNumber(this, 'hp')">
+        </div>
+        <div class="stat-input-group">
+          <label for="astroAttackInput">星座攻擊力</label>
+          <input type="number" id="astroAttackInput" class="stat-input" placeholder="0" min="0" oninput="validateNumber(this, 'constellationAttack')">
+        </div>
+        <div class="stat-input-group">
+          <label for="astroHpInput">星座血量</label>
+          <input type="number" id="astroHpInput" class="stat-input" placeholder="0" min="0" oninput="validateNumber(this, 'constellationHp')">
+        </div>
 
-    <!-- 最終計算結果顯示 -->
-    <div class="result-panel">
-      <div class="result-item">
-        <span class="result-title">最終總攻擊力</span>
-        <span class="result-value" id="finalAttackVal">0</span>
+        <!-- 造型加成選單 -->
+        <div class="skin-section-title">造型加成設定</div>
+        <div class="stat-input-group">
+          <label for="eggSkinSelect">皮蛋造型 (加成%攻擊)</label>
+          <select id="eggSkinSelect" class="skin-select" onchange="updateSkinBonus('atk', this.value)">
+            <option value="0.0">0.0%</option>
+            <option value="0.002">0.2%</option>
+            <option value="0.005">0.5%</option>
+            <option value="0.01">1.0%</option>
+            <option value="0.05">5.0%</option>
+          </select>
+        </div>
+        <div class="stat-input-group">
+          <label for="nestSkinSelect">巢造型 (加成%血量)</label>
+          <select id="nestSkinSelect" class="skin-select" onchange="updateSkinBonus('hp', this.value)">
+            <option value="0.0">0.0%</option>
+            <option value="0.002">0.2%</option>
+            <option value="0.005">0.5%</option>
+            <option value="0.01">1.0%</option>
+            <option value="0.05">5.0%</option>
+          </select>
+        </div>
       </div>
-      <div class="result-item">
-        <span class="result-title">最終總生命值</span>
-        <span class="result-value" id="finalHpVal">0</span>
-      </div>
-    </div>
 
-    <!-- 觸發類符文單次發動實際恢復量面板 -->
-    <div class="trigger-effect-panel">
-      <div class="trigger-title">符文實戰發動單次恢復估算</div>
-      <div class="trigger-row">
-        <span>🩸 吸血符文發動：</span>
-        <span class="trigger-val" id="vampHealVal">未裝備吸血符文</span>
+      <!-- 最終計算結果顯示 -->
+      <div class="result-panel">
+        <div class="result-item">
+          <span class="result-title">最終總攻擊力</span>
+          <span class="result-value" id="finalAttackVal">0</span>
+        </div>
+        <div class="result-item">
+          <span class="result-title">最終總生命值</span>
+          <span class="result-value" id="finalHpVal">0</span>
+        </div>
       </div>
-      <div class="trigger-row">
-        <span>💚 治癒符文發動：</span>
-        <span class="trigger-val" id="healRuneVal">未裝備治癒符文</span>
-      </div>
-    </div>
 
-    <!-- 詳細計算過程展開區塊 -->
-    <div class="calc-detail-panel">
-      <div style="font-weight: bold; color: #a0a0b0;">詳細計算過程：</div>
-      <div class="calc-formula" id="atkFormulaDetails">
-        <span class="highlight-atk">[攻擊]</span> (0 + 0 + 0) × (1 + 0%) = 0
+      <!-- 觸發類符文單次發動實際恢復量面板 -->
+      <div class="trigger-effect-panel">
+        <div class="trigger-title">符文實戰發動單次恢復估算</div>
+        <div class="trigger-row">
+          <span>🩸 吸血符文發動：</span>
+          <span class="trigger-val" id="vampHealVal">未裝備吸血符文</span>
+        </div>
+        <div class="trigger-row">
+          <span>💚 治癒符文發動：</span>
+          <span class="trigger-val" id="healRuneVal">未裝備治癒符文</span>
+        </div>
       </div>
-      <div class="calc-formula" id="hpFormulaDetails">
-        <span class="highlight-hp">[生命]</span> (0 + 0 + 0) × (1 + 0%) = 0
+
+      <!-- 已選擇符文列表 -->
+      <div class="equipped-panel">
+        <div class="panel-header">
+          <span>已選擇符文狀態</span>
+          <span id="equippedCount" style="color: #a0a0b0; font-weight: normal;">(0/5)</span>
+        </div>
+        <div class="equipped-list" id="equippedList">
+          <div style="color: #666; font-size: 11px; text-align: center; padding: 4px;">尚未裝備任何符文</div>
+        </div>
       </div>
-    </div>
 
-    <!-- 中間符文展示板 -->
-    <div class="rune-board">
-      <div class="rune-grid" id="runeGrid"></div>
-    </div>
-
-    <!-- 下方分類篩選按鈕 -->
-    <div class="filter-bar">
-      <button class="filter-btn" data-type="普通" onclick="toggleFilter('普通')">普通</button>
-      <button class="filter-btn" data-type="稀有" onclick="toggleFilter('稀有')">稀有</button>
-      <button class="filter-btn" data-type="史詩" onclick="toggleFilter('史詩')">史詩</button>
-      <button class="filter-btn" data-type="獨特" onclick="toggleFilter('獨特')">獨特</button>
-      <button class="filter-btn" data-type="傳說" onclick="toggleFilter('傳說')">傳說</button>
+      <!-- 詳細計算過程展開區塊 -->
+      <div class="calc-detail-panel">
+        <div style="font-weight: bold; color: #a0a0b0;">詳細計算過程：</div>
+        <div class="calc-formula" id="atkFormulaDetails">
+          <span class="highlight-atk">[攻擊]</span> (0 + 0 + 0) × (1 + 0%) = 0
+        </div>
+        <div class="calc-formula" id="hpFormulaDetails">
+          <span class="highlight-hp">[生命]</span> (0 + 0 + 0) × (1 + 0%) = 0
+        </div>
+      </div>
     </div>
   </div>
 
@@ -625,7 +660,7 @@
       { id: 11, name: "雷擊", rarity: "傳說" }
     ];
 
-    // 全符文等級數值設定 (包含吸血與治癒的獨立 ratio 恢復趴數)
+    // 全符文等級數值設定
     const runeStatsConfig = {
       // 普通級 (治癒)
       "治癒": {
