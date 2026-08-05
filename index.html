@@ -325,7 +325,7 @@
       background-color: rgba(255, 82, 82, 0.25);
     }
 
-    /* 觸發能力恢復量計算面板 */
+    /* 觸發能力恢復與傷害估算面板 */
     .trigger-effect-panel {
       width: 100%;
       background-color: #1a2228;
@@ -349,13 +349,26 @@
     .trigger-row {
       display: flex;
       justify-content: space-between;
+      align-items: center;
       font-size: 12px;
       color: #d0e8f0;
+    }
+
+    .trigger-val-container {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
     }
 
     .trigger-val {
       color: #00e5ff;
       font-weight: bold;
+    }
+
+    .trigger-avg {
+      color: #ffca28;
+      font-size: 11px;
     }
 
     /* 計算過程面板 */
@@ -383,7 +396,7 @@
     .highlight-atk { color: #fbc02d; font-weight: bold; }
     .highlight-hp { color: #4caf50; font-weight: bold; }
 
-    /* 符文展示板 (調整寬度適應左欄) */
+    /* 符文展示板 */
     .rune-board {
       width: 100%;
       height: 220px;
@@ -412,7 +425,7 @@
       align-content: flex-start;
     }
 
-    /* 符文卡片通用樣式 (固定長寬) */
+    /* 符文卡片通用樣式 */
     .rune-item {
       width: 72px;
       height: 72px;
@@ -607,16 +620,68 @@
         </div>
       </div>
 
-      <!-- 觸發類符文單次發動實際恢復量面板 -->
+      <!-- 觸發類符文發動效果估算面板 -->
       <div class="trigger-effect-panel">
-        <div class="trigger-title">符文實戰發動單次恢復估算</div>
+        <div class="trigger-title">符文實戰發動估算 (單次發動 / 平均期望)</div>
+        <div class="trigger-row">
+          <span>🏰 破壞者 I (對建築)：</span>
+          <div class="trigger-val-container">
+            <span class="trigger-val" id="destroyerVal">未裝備破壞者 I</span>
+          </div>
+        </div>
+        <div class="trigger-row">
+          <span>🏰 破壞者 II (對建築)：</span>
+          <div class="trigger-val-container">
+            <span class="trigger-val" id="destroyer2Val">未裝備破壞者 II</span>
+          </div>
+        </div>
+        <div class="trigger-row">
+          <span>🏰 破壞者 III (對建築)：</span>
+          <div class="trigger-val-container">
+            <span class="trigger-val" id="destroyer3Val">未裝備破壞者 III</span>
+          </div>
+        </div>
+        <div class="trigger-row">
+          <span>⚔️ 三重衝擊發動：</span>
+          <div class="trigger-val-container">
+            <span class="trigger-val" id="tripleHitVal">未裝備三重衝擊</span>
+            <span class="trigger-avg" id="tripleHitAvg"></span>
+          </div>
+        </div>
         <div class="trigger-row">
           <span>🩸 吸血符文發動：</span>
-          <span class="trigger-val" id="vampHealVal">未裝備吸血符文</span>
+          <div class="trigger-val-container">
+            <span class="trigger-val" id="vampHealVal">未裝備吸血符文</span>
+            <span class="trigger-avg" id="vampHealAvg"></span>
+          </div>
         </div>
         <div class="trigger-row">
           <span>💚 治癒符文發動：</span>
-          <span class="trigger-val" id="healRuneVal">未裝備治癒符文</span>
+          <div class="trigger-val-container">
+            <span class="trigger-val" id="healRuneVal">未裝備治癒符文</span>
+            <span class="trigger-avg" id="healRuneAvg"></span>
+          </div>
+        </div>
+        <div class="trigger-row">
+          <span>💀 犧牲符文發動：</span>
+          <div class="trigger-val-container">
+            <span class="trigger-val" id="sacRuneVal">未裝備犧牲符文</span>
+            <span class="trigger-avg" id="sacRuneAvg"></span>
+          </div>
+        </div>
+        <div class="trigger-row">
+          <span>☄️ 隕石符文發動：</span>
+          <div class="trigger-val-container">
+            <span class="trigger-val" id="meteorVal">未裝備隕石</span>
+            <span class="trigger-avg" id="meteorAvg"></span>
+          </div>
+        </div>
+        <div class="trigger-row">
+          <span>⚡ 雷擊符文發動：</span>
+          <div class="trigger-val-container">
+            <span class="trigger-val" id="lightningVal">未裝備雷擊</span>
+            <span class="trigger-avg" id="lightningAvg"></span>
+          </div>
         </div>
       </div>
 
@@ -645,20 +710,76 @@
   </div>
 
   <script>
-    // 符文清單
+    // 符文清單 (已依照品質由低到高排序：普通 -> 稀有 -> 史詩 -> 獨特 -> 傳說)
     const runesData = [
+      // ===== 普通 =====
       { id: 1, name: "治癒", rarity: "普通" },
+      { id: 12, name: "犧牲", rarity: "普通" },
+      { id: 13, name: "三重衝擊", rarity: "普通" },
+      { id: 14, name: "破壞者 I", rarity: "普通" },
+
+      // ===== 稀有 =====
       { id: 2, name: "堅硬2", rarity: "稀有" },
+      { id: 15, name: "破壞者 II", rarity: "稀有" },
+
+      // ===== 史詩 =====
       { id: 3, name: "壓縮", rarity: "史詩" },
       { id: 4, name: "猛瑪", rarity: "史詩" },
       { id: 5, name: "攻擊力3", rarity: "史詩" },
       { id: 6, name: "體力3", rarity: "史詩" },
+      { id: 16, name: "破壞者 III", rarity: "史詩" },
+
+      // ===== 獨特 =====
       { id: 7, name: "吸血", rarity: "獨特" },
       { id: 8, name: "強打", rarity: "獨特" },
       { id: 9, name: "屏障", rarity: "獨特" },
+
+      // ===== 傳說 =====
       { id: 10, name: "隕石", rarity: "傳說" },
       { id: 11, name: "雷擊", rarity: "傳說" }
     ];
+
+    // 輔助函式：取得各等級機率與技能趴數 (供傳說與恢復符文解析)
+    function getRuneProcData(runeName, level) {
+      if (runeName === "治癒") {
+        if (level <= 10) return { procRate: 0.05, skillRatio: 0.01 + (level - 1) * 0.001 + (level >= 6 ? 0.005 : 0) };
+        if (level <= 20) return { procRate: 0.08, skillRatio: 0.025 + (level - 11) * 0.001 + (level >= 16 ? 0.005 : 0) };
+        if (level <= 25) return { procRate: 0.10, skillRatio: 0.040 + (level - 21) * 0.001 };
+        if (level <= 30) return { procRate: 0.10, skillRatio: 0.060 + (level - 26) * 0.002 };
+        return { procRate: 0.10, skillRatio: 0.080 };
+      }
+      if (runeName === "犧牲") {
+        if (level <= 10) return { procRate: 0.35, skillRatio: 0.10 + (level - 1) * 0.005 + (level >= 6 ? 0.025 : 0) };
+        if (level <= 20) return { procRate: 0.40, skillRatio: 0.20 + (level - 11) * 0.005 + (level >= 16 ? 0.025 : 0) };
+        if (level <= 30) return { procRate: 0.45, skillRatio: 0.30 + (level - 21) * 0.005 + (level >= 26 ? 0.025 : 0) };
+        return { procRate: 0.50, skillRatio: 0.45 };
+      }
+      if (runeName === "吸血") {
+        if (level <= 10) return { procRate: 0.15, skillRatio: 0.30 + (level - 1) * 0.02 + (level >= 6 ? 0.05 : 0) };
+        if (level <= 20) return { procRate: 0.20, skillRatio: 0.55 + (level - 11) * 0.02 + (level >= 16 ? 0.05 : 0) };
+        if (level <= 30) return { procRate: 0.25, skillRatio: 0.80 + (level - 21) * 0.02 + (level >= 26 ? 0.05 : 0) };
+        return { procRate: 0.30, skillRatio: 1.10 };
+      }
+      if (runeName === "隕石") {
+        if (level <= 5) return { procRate: 0.50, skillRatio: 0.15 + (level - 1) * 0.01 };
+        if (level <= 10) return { procRate: 0.55, skillRatio: 0.20 + (level - 6) * 0.01 };
+        if (level <= 15) return { procRate: 0.55, skillRatio: 0.40 + (level - 11) * 0.01 };
+        if (level <= 20) return { procRate: 0.55, skillRatio: 0.50 + (level - 16) * 0.01 };
+        if (level <= 25) return { procRate: 0.60, skillRatio: 0.65 + (level - 21) * 0.01 };
+        if (level <= 30) return { procRate: 0.65, skillRatio: 0.70 + (level - 26) * 0.01 };
+        return { procRate: 0.65, skillRatio: 0.80 };
+      }
+      if (runeName === "雷擊") {
+        if (level <= 5) return { procRate: 0.40, skillRatio: 0.60 + (level - 1) * 0.01 };
+        if (level <= 10) return { procRate: 0.45, skillRatio: 0.75 + (level - 6) * 0.01 };
+        if (level <= 15) return { procRate: 0.50, skillRatio: 1.00 + (level - 11) * 0.01 };
+        if (level <= 20) return { procRate: 0.50, skillRatio: 1.24 + (level - 16) * 0.01 };
+        if (level <= 25) return { procRate: 0.60, skillRatio: 1.35 + (level - 21) * 0.01 };
+        if (level <= 30) return { procRate: 0.65, skillRatio: 1.50 + (level - 26) * 0.01 };
+        return { procRate: 0.65, skillRatio: 1.70 };
+      }
+      return { procRate: 1.0, skillRatio: 0.0 };
+    }
 
     // 全符文等級數值設定
     const runeStatsConfig = {
@@ -697,15 +818,190 @@
         31: { ratio: 0.080, desc: "被擊時10%機率恢復最大生命8.0%" }
       },
 
+      // 普通級 (犧牲)
+      "犧牲": {
+        1: { ratio: 0.100, desc: "死亡時，有35.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的10.0%" },
+        2: { ratio: 0.105, desc: "死亡時，有35.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的10.5%" },
+        3: { ratio: 0.110, desc: "死亡時，有35.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的11.0%" },
+        4: { ratio: 0.115, desc: "死亡時，有35.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的11.5%" },
+        5: { ratio: 0.120, desc: "死亡時，有35.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的12.0%" },
+        6: { ratio: 0.150, desc: "死亡時，有35.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的15.0%" },
+        7: { ratio: 0.155, desc: "死亡時，有35.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的15.5%" },
+        8: { ratio: 0.160, desc: "死亡時，有35.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的16.0%" },
+        9: { ratio: 0.165, desc: "死亡時，有35.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的16.5%" },
+        10: { ratio: 0.170, desc: "死亡時，有35.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的17.0%" },
+        11: { ratio: 0.200, desc: "死亡時，有40.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的20.0%" },
+        12: { ratio: 0.205, desc: "死亡時，有40.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的20.5%" },
+        13: { ratio: 0.210, desc: "死亡時，有40.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的21.0%" },
+        14: { ratio: 0.215, desc: "死亡時，有40.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的21.5%" },
+        15: { ratio: 0.220, desc: "死亡時，有40.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的22.0%" },
+        16: { ratio: 0.250, desc: "死亡時，有40.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的25.0%" },
+        17: { ratio: 0.255, desc: "死亡時，有40.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的25.5%" },
+        18: { ratio: 0.260, desc: "死亡時，有40.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的26.0%" },
+        19: { ratio: 0.265, desc: "死亡時，有40.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的26.5%" },
+        20: { ratio: 0.270, desc: "死亡時，有40.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的27.0%" },
+        21: { ratio: 0.300, desc: "死亡時，有45.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的30.0%" },
+        22: { ratio: 0.305, desc: "死亡時，有45.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的30.5%" },
+        23: { ratio: 0.310, desc: "死亡時，有45.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的31.0%" },
+        24: { ratio: 0.315, desc: "死亡時，有45.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的31.5%" },
+        25: { ratio: 0.320, desc: "死亡時，有45.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的32.0%" },
+        26: { ratio: 0.350, desc: "死亡時，有45.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的35.0%" },
+        27: { ratio: 0.355, desc: "死亡時，有45.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的35.5%" },
+        28: { ratio: 0.360, desc: "死亡時，有45.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的36.0%" },
+        29: { ratio: 0.365, desc: "死亡時，有45.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的36.5%" },
+        30: { ratio: 0.370, desc: "死亡時，有45.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的37.0%" },
+        31: { ratio: 0.450, desc: "死亡時，有50.0%的機率為同一格子上一部落的所有單位恢復我方單位最大生命值的45.0%" }
+      },
+
+      // 普通級 (三重衝擊)
+      "三重衝擊": {
+        1: { ratio: 0.020, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的2.0%" },
+        2: { ratio: 0.025, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的2.5%" },
+        3: { ratio: 0.030, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的3.0%" },
+        4: { ratio: 0.035, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的3.5%" },
+        5: { ratio: 0.040, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的4.0%" },
+        6: { ratio: 0.060, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的6.0%" },
+        7: { ratio: 0.065, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的6.5%" },
+        8: { ratio: 0.070, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的7.0%" },
+        9: { ratio: 0.075, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的7.5%" },
+        10: { ratio: 0.080, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的8.0%" },
+        11: { ratio: 0.100, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的10.0%" },
+        12: { ratio: 0.105, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的10.5%" },
+        13: { ratio: 0.110, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的11.0%" },
+        14: { ratio: 0.115, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的11.5%" },
+        15: { ratio: 0.120, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的12.0%" },
+        16: { ratio: 0.140, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的14.0%" },
+        17: { ratio: 0.145, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的14.5%" },
+        18: { ratio: 0.150, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的15.0%" },
+        19: { ratio: 0.155, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的15.5%" },
+        20: { ratio: 0.160, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的16.0%" },
+        21: { ratio: 0.180, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的18.0%" },
+        22: { ratio: 0.185, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的18.5%" },
+        23: { ratio: 0.190, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的19.0%" },
+        24: { ratio: 0.195, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的19.5%" },
+        25: { ratio: 0.200, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的20.0%" },
+        26: { ratio: 0.220, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的22.0%" },
+        27: { ratio: 0.225, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的22.5%" },
+        28: { ratio: 0.230, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的23.0%" },
+        29: { ratio: 0.235, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的23.5%" },
+        30: { ratio: 0.240, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的24.0%" },
+        31: { ratio: 0.270, desc: "每第三次攻擊會造成額外傷害，等同於我單位攻擊力的27.0%" }
+      },
+
+      // 普通級 (破壞者 I)
+      "破壞者 I": {
+        1: { ratio: 0.051, desc: "單位攻擊建築物時攻擊力提高5.1%" },
+        2: { ratio: 0.054, desc: "單位攻擊建築物時攻擊力提高5.4%" },
+        3: { ratio: 0.057, desc: "單位攻擊建築物時攻擊力提高5.7%" },
+        4: { ratio: 0.060, desc: "單位攻擊建築物時攻擊力提高6.0%" },
+        5: { ratio: 0.063, desc: "單位攻擊建築物時攻擊力提高6.3%" },
+        6: { ratio: 0.075, desc: "單位攻擊建築物時攻擊力提高7.5%" },
+        7: { ratio: 0.078, desc: "單位攻擊建築物時攻擊力提高7.8%" },
+        8: { ratio: 0.081, desc: "單位攻擊建築物時攻擊力提高8.1%" },
+        9: { ratio: 0.084, desc: "單位攻擊建築物時攻擊力提高8.4%" },
+        10: { ratio: 0.087, desc: "單位攻擊建築物時攻擊力提高8.7%" },
+        11: { ratio: 0.099, desc: "單位攻擊建築物時攻擊力提高9.9%" },
+        12: { ratio: 0.102, desc: "單位攻擊建築物時攻擊力提高10.2%" },
+        13: { ratio: 0.105, desc: "單位攻擊建築物時攻擊力提高10.5%" },
+        14: { ratio: 0.108, desc: "單位攻擊建築物時攻擊力提高10.8%" },
+        15: { ratio: 0.111, desc: "單位攻擊建築物時攻擊力提高11.1%" },
+        16: { ratio: 0.132, desc: "單位攻擊建築物時攻擊力提高13.2%" },
+        17: { ratio: 0.135, desc: "單位攻擊建築物時攻擊力提高13.5%" },
+        18: { ratio: 0.138, desc: "單位攻擊建築物時攻擊力提高13.8%" },
+        19: { ratio: 0.141, desc: "單位攻擊建築物時攻擊力提高14.1%" },
+        20: { ratio: 0.144, desc: "單位攻擊建築物時攻擊力提高14.4%" },
+        21: { ratio: 0.171, desc: "單位攻擊建築物時攻擊力提高17.1%" },
+        22: { ratio: 0.177, desc: "單位攻擊建築物時攻擊力提高17.7%" },
+        23: { ratio: 0.183, desc: "單位攻擊建築物時攻擊力提高18.3%" },
+        24: { ratio: 0.189, desc: "單位攻擊建築物時攻擊力提高18.9%" },
+        25: { ratio: 0.195, desc: "單位攻擊建築物時攻擊力提高19.5%" },
+        26: { ratio: 0.231, desc: "單位攻擊建築物時攻擊力提高23.1%" },
+        27: { ratio: 0.237, desc: "單位攻擊建築物時攻擊力提高23.7%" },
+        28: { ratio: 0.243, desc: "單位攻擊建築物時攻擊力提高24.3%" },
+        29: { ratio: 0.249, desc: "單位攻擊建築物時攻擊力提高24.9%" },
+        30: { ratio: 0.255, desc: "單位攻擊建築物時攻擊力提高25.5%" },
+        31: { ratio: 0.300, desc: "單位攻擊建築物時攻擊力提高30.0%" }
+      },
+
+      // 稀有級 (破壞者 II)
+      "破壞者 II": {
+        1: { ratio: 0.119, desc: "單位攻擊建築物時攻擊力提高11.9%" },
+        2: { ratio: 0.126, desc: "單位攻擊建築物時攻擊力提高12.6%" },
+        3: { ratio: 0.133, desc: "單位攻擊建築物時攻擊力提高13.3%" },
+        4: { ratio: 0.140, desc: "單位攻擊建築物時攻擊力提高14.0%" },
+        5: { ratio: 0.147, desc: "單位攻擊建築物時攻擊力提高14.7%" },
+        6: { ratio: 0.175, desc: "單位攻擊建築物時攻擊力提高17.5%" },
+        7: { ratio: 0.182, desc: "單位攻擊建築物時攻擊力提高18.2%" },
+        8: { ratio: 0.189, desc: "單位攻擊建築物時攻擊力提高18.9%" },
+        9: { ratio: 0.196, desc: "單位攻擊建築物時攻擊力提高19.6%" },
+        10: { ratio: 0.203, desc: "單位攻擊建築物時攻擊力提高20.3%" },
+        11: { ratio: 0.231, desc: "單位攻擊建築物時攻擊力提高23.1%" },
+        12: { ratio: 0.238, desc: "單位攻擊建築物時攻擊力提高23.8%" },
+        13: { ratio: 0.245, desc: "單位攻擊建築物時攻擊力提高24.5%" },
+        14: { ratio: 0.252, desc: "單位攻擊建築物時攻擊力提高25.2%" },
+        15: { ratio: 0.259, desc: "單位攻擊建築物時攻擊力提高25.9%" },
+        16: { ratio: 0.308, desc: "單位攻擊建築物時攻擊力提高30.8%" },
+        17: { ratio: 0.315, desc: "單位攻擊建築物時攻擊力提高31.5%" },
+        18: { ratio: 0.322, desc: "單位攻擊建築物時攻擊力提高32.2%" },
+        19: { ratio: 0.329, desc: "單位攻擊建築物時攻擊力提高32.9%" },
+        20: { ratio: 0.336, desc: "單位攻擊建築物時攻擊力提高33.6%" },
+        21: { ratio: 0.399, desc: "單位攻擊建築物時攻擊力提高39.9%" },
+        22: { ratio: 0.413, desc: "單位攻擊建築物時攻擊力提高41.3%" },
+        23: { ratio: 0.427, desc: "單位攻擊建築物時攻擊力提高42.7%" },
+        24: { ratio: 0.441, desc: "單位攻擊建築物時攻擊力提高44.1%" },
+        25: { ratio: 0.455, desc: "單位攻擊建築物時攻擊力提高45.5%" },
+        26: { ratio: 0.539, desc: "單位攻擊建築物時攻擊力提高53.9%" },
+        27: { ratio: 0.553, desc: "單位攻擊建築物時攻擊力提高55.3%" },
+        28: { ratio: 0.567, desc: "單位攻擊建築物時攻擊力提高56.7%" },
+        29: { ratio: 0.581, desc: "單位攻擊建築物時攻擊力提高58.1%" },
+        30: { ratio: 0.595, desc: "單位攻擊建築物時攻擊力提高59.5%" },
+        31: { ratio: 0.700, desc: "單位攻擊建築物時攻擊力提高70.0%" }
+      },
+
+      // 史詩級 (破壞者 III)
+      "破壞者 III": {
+        1: { ratio: 0.280, desc: "單位攻擊建築物時攻擊力提高28.0%" },
+        2: { ratio: 0.288, desc: "單位攻擊建築物時攻擊力提高28.8%" },
+        3: { ratio: 0.296, desc: "單位攻擊建築物時攻擊力提高29.6%" },
+        4: { ratio: 0.304, desc: "單位攻擊建築物時攻擊力提高30.4%" },
+        5: { ratio: 0.312, desc: "單位攻擊建築物時攻擊力提高31.2%" },
+        6: { ratio: 0.400, desc: "單位攻擊建築物時攻擊力提高40.0%" },
+        7: { ratio: 0.408, desc: "單位攻擊建築物時攻擊力提高40.8%" },
+        8: { ratio: 0.416, desc: "單位攻擊建築物時攻擊力提高41.6%" },
+        9: { ratio: 0.424, desc: "單位攻擊建築物時攻擊力提高42.4%" },
+        10: { ratio: 0.432, desc: "單位攻擊建築物時攻擊力提高43.2%" },
+        11: { ratio: 0.520, desc: "單位攻擊建築物時攻擊力提高52.0%" },
+        12: { ratio: 0.536, desc: "單位攻擊建築物時攻擊力提高53.6%" },
+        13: { ratio: 0.552, desc: "單位攻擊建築物時攻擊力提高55.2%" },
+        14: { ratio: 0.568, desc: "單位攻擊建築物時攻擊力提高56.8%" },
+        15: { ratio: 0.584, desc: "單位攻擊建築物時攻擊力提高58.4%" },
+        16: { ratio: 0.680, desc: "單位攻擊建築物時攻擊力提高68.0%" },
+        17: { ratio: 0.700, desc: "單位攻擊建築物時攻擊力提高70.0%" },
+        18: { ratio: 0.720, desc: "單位攻擊建築物時攻擊力提高72.0%" },
+        19: { ratio: 0.740, desc: "單位攻擊建築物時攻擊力提高74.0%" },
+        20: { ratio: 0.760, desc: "單位攻擊建築物時攻擊力提高76.0%" },
+        21: { ratio: 0.920, desc: "單位攻擊建築物時攻擊力提高92.0%" },
+        22: { ratio: 0.940, desc: "單位攻擊建築物時攻擊力提高94.0%" },
+        23: { ratio: 0.960, desc: "單位攻擊建築物時攻擊力提高96.0%" },
+        24: { ratio: 0.980, desc: "單位攻擊建築物時攻擊力提高98.0%" },
+        25: { ratio: 1.000, desc: "單位攻擊建築物時攻擊力提高100.0%" },
+        26: { ratio: 1.240, desc: "單位攻擊建築物時攻擊力提高124.0%" },
+        27: { ratio: 1.260, desc: "單位攻擊建築物時攻擊力提高126.0%" },
+        28: { ratio: 1.280, desc: "單位攻擊建築物時攻擊力提高128.0%" },
+        29: { ratio: 1.300, desc: "單位攻擊建築物時攻擊力提高130.0%" },
+        30: { ratio: 1.320, desc: "單位攻擊建築物時攻擊力提高132.0%" },
+        31: { ratio: 1.600, desc: "單位攻擊建築物時攻擊力提高160.0%" }
+      },
+
       // 稀有級 (堅硬2)
       "堅硬2": {
         1: { desc: "受擊時，傷害減少30" },2: { desc: "受擊時，傷害減少32" },3: { desc: "受擊時，傷害減少34" },4: { desc: "受擊時，傷害減少36" },5: { desc: "受擊時，傷害減少38" },
         6: { desc: "受擊時，傷害減少40" },7: { desc: "受擊時，傷害減少42" },8: { desc: "受擊時，傷害減少44" },9: { desc: "受擊時，傷害減少46" },10: { desc: "受擊時，傷害減少48" },
         11: { desc: "受擊時，傷害減少50" },12: { desc: "受擊時，傷害減少52" },13: { desc: "受擊時，傷害減少54" },14: { desc: "受擊時，傷害減少56" },15: { desc: "受擊時，傷害減少58" },
         16: { desc: "受擊時，傷害減少60" },17: { desc: "受擊時，傷害減少62" },18: { desc: "受擊時，傷害減少64" },19: { desc: "受擊時，傷害減少66" },20: { desc: "受擊時，傷害減少68" },
-        21: { desc: "受擊時，傷害減少70" },22: { desc: "受擊時，傷害減少72" },23: { desc: "受擊時，傷害減少74" },24: { desc: "受擊時，傷害減少76" },25: { desc: "受擊時，傷害减少78" },
-        26: { desc: "受擊時，傷害減少80" },27: { desc: "受擊時，傷害減少82" },28: { desc: "受擊時，傷害減少84" },29: { desc: "受擊時，傷害減少86" },30: { desc: "受擊時，傷害减少88" },
-        31: { desc: "受擊時，傷害减少90" }
+        21: { desc: "受擊時，傷害減少70" },22: { desc: "受擊時，傷害減少72" },23: { desc: "受擊時，傷害減少74" },24: { desc: "受擊時，傷害減少76" },25: { desc: "受擊時，傷害減少78" },
+        26: { desc: "受擊時，傷害減少80" },27: { desc: "受擊時，傷害減少82" },28: { desc: "受擊時，傷害減少84" },29: { desc: "受擊時，傷害減少86" },30: { desc: "受擊時，傷害減少88" },
+        31: { desc: "受擊時，傷害減少90" }
       },
 
       // 史詩級
@@ -1010,8 +1306,15 @@
       let runeHpPct = 0;
 
       // 紀錄觸發類符文之參數
-      let vampInfo = null; // 吸血
-      let healInfo = null; // 治癒
+      let vampInfo = null;        // 吸血
+      let healInfo = null;        // 治癒
+      let sacInfo = null;         // 犧牲
+      let tripleHitInfo = null;   // 三重衝擊
+      let destroyerInfo = null;   // 破壞者 I
+      let destroyer2Info = null;  // 破壞者 II
+      let destroyer3Info = null;  // 破壞者 III
+      let meteorInfo = null;      // 隕石
+      let lightningInfo = null;   // 雷擊
 
       const equippedListEl = document.getElementById('equippedList');
       equippedListEl.innerHTML = '';
@@ -1032,10 +1335,36 @@
             if (data.hpPct) runeHpPct += data.hpPct;
 
             if (rune.name === "吸血") {
-              vampInfo = { level: lvl, ratio: data.ratio || 0 };
+              const pData = getRuneProcData("吸血", lvl);
+              vampInfo = { level: lvl, ratio: pData.skillRatio, procRate: pData.procRate };
             }
             if (rune.name === "治癒") {
-              healInfo = { level: lvl, ratio: data.ratio || 0 };
+              const pData = getRuneProcData("治癒", lvl);
+              healInfo = { level: lvl, ratio: pData.skillRatio, procRate: pData.procRate };
+            }
+            if (rune.name === "犧牲") {
+              const pData = getRuneProcData("犧牲", lvl);
+              sacInfo = { level: lvl, ratio: pData.skillRatio, procRate: pData.procRate };
+            }
+            if (rune.name === "三重衝擊") {
+              tripleHitInfo = { level: lvl, ratio: data.ratio || 0 };
+            }
+            if (rune.name === "破壞者 I") {
+              destroyerInfo = { level: lvl, ratio: data.ratio || 0 };
+            }
+            if (rune.name === "破壞者 II") {
+              destroyer2Info = { level: lvl, ratio: data.ratio || 0 };
+            }
+            if (rune.name === "破壞者 III") {
+              destroyer3Info = { level: lvl, ratio: data.ratio || 0 };
+            }
+            if (rune.name === "隕石") {
+              const pData = getRuneProcData("隕石", lvl);
+              meteorInfo = { level: lvl, ratio: pData.skillRatio, procRate: pData.procRate };
+            }
+            if (rune.name === "雷擊") {
+              const pData = getRuneProcData("雷擊", lvl);
+              lightningInfo = { level: lvl, ratio: pData.skillRatio, procRate: pData.procRate };
             }
           }
 
@@ -1063,11 +1392,11 @@
       const totalAtkPct = runeAtkPct + skinBonus.atk;
       const totalHpPct = runeHpPct + skinBonus.hp;
 
-      // 1. 計算總攻擊力 = (基礎攻擊 + 星座攻擊 + 符文固定攻擊) * (1 + 符文攻擊% + 皮蛋造型%)
+      // 1. 計算總攻擊力
       const baseAtkSum = playerStats.attack + playerStats.constellationAttack + runeFlatAtk;
       const finalAtk = Math.round(baseAtkSum * (1 + totalAtkPct));
 
-      // 2. 計算總生命值 = (基礎血量 + 星座血量 + 符文固定血量) * (1 + 符文血量% + 巢造型%)
+      // 2. 計算總生命值
       const baseHpSum = playerStats.hp + playerStats.constellationHp + runeFlatHp;
       const finalHp = Math.round(baseHpSum * (1 + totalHpPct));
 
@@ -1075,19 +1404,94 @@
       document.getElementById('finalAttackVal').innerText = finalAtk.toLocaleString();
       document.getElementById('finalHpVal').innerText = finalHp.toLocaleString();
 
-      // 更新發動單次恢復估算
-      if (vampInfo) {
-        const vampHealAmount = Math.round(finalAtk * vampInfo.ratio);
-        document.getElementById('vampHealVal').innerText = `恢復 ${vampHealAmount.toLocaleString()} 生命 (Lv.${vampInfo.level})`;
+      // ===== 更新發動單次數值與期望值估算 =====
+
+      // 破壞者 I~III
+      if (destroyerInfo) {
+        const buildingAtk = Math.round(finalAtk * (1 + destroyerInfo.ratio));
+        document.getElementById('destroyerVal').innerText = `攻擊力提升至 ${buildingAtk.toLocaleString()} (+${(destroyerInfo.ratio * 100).toFixed(1)}%)`;
       } else {
-        document.getElementById('vampHealVal').innerText = "未裝備吸血符文";
+        document.getElementById('destroyerVal').innerText = "未裝備破壞者 I";
       }
 
+      if (destroyer2Info) {
+        const buildingAtk2 = Math.round(finalAtk * (1 + destroyer2Info.ratio));
+        document.getElementById('destroyer2Val').innerText = `攻擊力提升至 ${buildingAtk2.toLocaleString()} (+${(destroyer2Info.ratio * 100).toFixed(1)}%)`;
+      } else {
+        document.getElementById('destroyer2Val').innerText = "未裝備破壞者 II";
+      }
+
+      if (destroyer3Info) {
+        const buildingAtk3 = Math.round(finalAtk * (1 + destroyer3Info.ratio));
+        document.getElementById('destroyer3Val').innerText = `攻擊力提升至 ${buildingAtk3.toLocaleString()} (+${(destroyer3Info.ratio * 100).toFixed(1)}%)`;
+      } else {
+        document.getElementById('destroyer3Val').innerText = "未裝備破壞者 III";
+      }
+
+      // 三重衝擊 (每3下發動一次)
+      if (tripleHitInfo) {
+        const extraDamage = Math.round(finalAtk * tripleHitInfo.ratio);
+        const avgDamage = Math.round(extraDamage / 3);
+        document.getElementById('tripleHitVal').innerText = `單次加成 ${extraDamage.toLocaleString()} (Lv.${tripleHitInfo.level})`;
+        document.getElementById('tripleHitAvg').innerText = `⚖️ 平均每下：+${avgDamage.toLocaleString()} 傷害`;
+      } else {
+        document.getElementById('tripleHitVal').innerText = "未裝備三重衝擊";
+        document.getElementById('tripleHitAvg').innerText = "";
+      }
+
+      // 吸血 (機率15%~30%)
+      if (vampInfo) {
+        const vampHealAmount = Math.round(finalAtk * vampInfo.ratio);
+        const avgVampHeal = Math.round(vampHealAmount * vampInfo.procRate);
+        document.getElementById('vampHealVal').innerText = `單次恢復 ${vampHealAmount.toLocaleString()} (Lv.${vampInfo.level})`;
+        document.getElementById('vampHealAvg').innerText = `⚖️ 平均每下：+${avgVampHeal.toLocaleString()} 生命 (${(vampInfo.procRate * 100)}%)`;
+      } else {
+        document.getElementById('vampHealVal').innerText = "未裝備吸血符文";
+        document.getElementById('vampHealAvg').innerText = "";
+      }
+
+      // 治癒 (機率5%~10%)
       if (healInfo) {
         const healRuneAmount = Math.round(finalHp * healInfo.ratio);
-        document.getElementById('healRuneVal').innerText = `恢復 ${healRuneAmount.toLocaleString()} 生命 (Lv.${healInfo.level})`;
+        const avgHealRune = Math.round(healRuneAmount * healInfo.procRate);
+        document.getElementById('healRuneVal').innerText = `單次恢復 ${healRuneAmount.toLocaleString()} (Lv.${healInfo.level})`;
+        document.getElementById('healRuneAvg').innerText = `⚖️ 平均被擊：+${avgHealRune.toLocaleString()} 生命 (${(healInfo.procRate * 100)}%)`;
       } else {
         document.getElementById('healRuneVal').innerText = "未裝備治癒符文";
+        document.getElementById('healRuneAvg').innerText = "";
+      }
+
+      // 犧牲 (機率35%~50%)
+      if (sacInfo) {
+        const sacRuneAmount = Math.round(finalHp * sacInfo.ratio);
+        const avgSacRune = Math.round(sacRuneAmount * sacInfo.procRate);
+        document.getElementById('sacRuneVal').innerText = `單次恢復 ${sacRuneAmount.toLocaleString()} (Lv.${sacInfo.level})`;
+        document.getElementById('sacRuneAvg').innerText = `⚖️ 平均陣亡：+${avgSacRune.toLocaleString()} 生命 (${(sacInfo.procRate * 100)}%)`;
+      } else {
+        document.getElementById('sacRuneVal').innerText = "未裝備犧牲符文";
+        document.getElementById('sacRuneAvg').innerText = "";
+      }
+
+      // 隕石 (機率50%~65%)
+      if (meteorInfo) {
+        const meteorDmg = Math.round(finalAtk * meteorInfo.ratio);
+        const avgMeteorDmg = Math.round(meteorDmg * meteorInfo.procRate);
+        document.getElementById('meteorVal').innerText = `單次技能 ${meteorDmg.toLocaleString()} (Lv.${meteorInfo.level})`;
+        document.getElementById('meteorAvg').innerText = `⚖️ 平均每下：+${avgMeteorDmg.toLocaleString()} 傷害 (${(meteorInfo.procRate * 100).toFixed(0)}%)`;
+      } else {
+        document.getElementById('meteorVal').innerText = "未裝備隕石";
+        document.getElementById('meteorAvg').innerText = "";
+      }
+
+      // 雷擊 (機率40%~65%)
+      if (lightningInfo) {
+        const lightningDmg = Math.round(finalAtk * lightningInfo.ratio);
+        const avgLightningDmg = Math.round(lightningDmg * lightningInfo.procRate);
+        document.getElementById('lightningVal').innerText = `單次技能 ${lightningDmg.toLocaleString()} (Lv.${lightningInfo.level})`;
+        document.getElementById('lightningAvg').innerText = `⚖️ 平均每下：+${avgLightningDmg.toLocaleString()} 傷害 (${(lightningInfo.procRate * 100)}%)`;
+      } else {
+        document.getElementById('lightningVal').innerText = "未裝備雷擊";
+        document.getElementById('lightningAvg').innerText = "";
       }
 
       // 更新計算過程 UI
