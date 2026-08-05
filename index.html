@@ -244,10 +244,15 @@
     }
 
     .result-value {
-      font-size: 18px;
+      font-size: 17px;
       font-weight: bold;
       color: #76c720;
       text-shadow: 0 0 6px rgba(118, 199, 32, 0.4);
+    }
+
+    .result-value.building {
+      color: #ff9800;
+      text-shadow: 0 0 6px rgba(255, 152, 0, 0.4);
     }
 
     /* 已選擇符文列表面板 */
@@ -346,12 +351,21 @@
       padding-bottom: 4px;
     }
 
+    .trigger-row-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
     .trigger-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
       font-size: 12px;
       color: #d0e8f0;
+      background-color: rgba(0, 0, 0, 0.2);
+      padding: 6px 8px;
+      border-radius: 6px;
     }
 
     .trigger-val-container {
@@ -395,6 +409,7 @@
 
     .highlight-atk { color: #fbc02d; font-weight: bold; }
     .highlight-hp { color: #4caf50; font-weight: bold; }
+    .highlight-building { color: #ff9800; font-weight: bold; }
 
     /* 符文展示板 */
     .rune-board {
@@ -583,6 +598,10 @@
           <label for="astroHpInput">星座血量</label>
           <input type="number" id="astroHpInput" class="stat-input" placeholder="0" min="0" oninput="validateNumber(this, 'constellationHp')">
         </div>
+        <div class="stat-input-group" style="grid-column: span 2;">
+          <label for="astroBuildingAtkInput">星座建築物傷害</label>
+          <input type="number" id="astroBuildingAtkInput" class="stat-input" placeholder="0" min="0" oninput="validateNumber(this, 'constellationBuildingAtk')">
+        </div>
 
         <!-- 造型加成選單 -->
         <div class="skin-section-title">造型加成設定</div>
@@ -618,70 +637,17 @@
           <span class="result-title">最終總生命值</span>
           <span class="result-value" id="finalHpVal">0</span>
         </div>
+        <div class="result-item">
+          <span class="result-title">最終對建築物傷害</span>
+          <span class="result-value building" id="finalBuildingAtkVal">0</span>
+        </div>
       </div>
 
-      <!-- 觸發類符文發動效果估算面板 -->
+      <!-- 觸發類符文發動效果估算面板 (動態渲染已選符文) -->
       <div class="trigger-effect-panel">
         <div class="trigger-title">符文實戰發動估算 (單次發動 / 平均期望)</div>
-        <div class="trigger-row">
-          <span>🏰 破壞者 I (對建築)：</span>
-          <div class="trigger-val-container">
-            <span class="trigger-val" id="destroyerVal">未裝備破壞者 I</span>
-          </div>
-        </div>
-        <div class="trigger-row">
-          <span>🏰 破壞者 II (對建築)：</span>
-          <div class="trigger-val-container">
-            <span class="trigger-val" id="destroyer2Val">未裝備破壞者 II</span>
-          </div>
-        </div>
-        <div class="trigger-row">
-          <span>🏰 破壞者 III (對建築)：</span>
-          <div class="trigger-val-container">
-            <span class="trigger-val" id="destroyer3Val">未裝備破壞者 III</span>
-          </div>
-        </div>
-        <div class="trigger-row">
-          <span>⚔️ 三重衝擊發動：</span>
-          <div class="trigger-val-container">
-            <span class="trigger-val" id="tripleHitVal">未裝備三重衝擊</span>
-            <span class="trigger-avg" id="tripleHitAvg"></span>
-          </div>
-        </div>
-        <div class="trigger-row">
-          <span>🩸 吸血符文發動：</span>
-          <div class="trigger-val-container">
-            <span class="trigger-val" id="vampHealVal">未裝備吸血符文</span>
-            <span class="trigger-avg" id="vampHealAvg"></span>
-          </div>
-        </div>
-        <div class="trigger-row">
-          <span>💚 治癒符文發動：</span>
-          <div class="trigger-val-container">
-            <span class="trigger-val" id="healRuneVal">未裝備治癒符文</span>
-            <span class="trigger-avg" id="healRuneAvg"></span>
-          </div>
-        </div>
-        <div class="trigger-row">
-          <span>💀 犧牲符文發動：</span>
-          <div class="trigger-val-container">
-            <span class="trigger-val" id="sacRuneVal">未裝備犧牲符文</span>
-            <span class="trigger-avg" id="sacRuneAvg"></span>
-          </div>
-        </div>
-        <div class="trigger-row">
-          <span>☄️ 隕石符文發動：</span>
-          <div class="trigger-val-container">
-            <span class="trigger-val" id="meteorVal">未裝備隕石</span>
-            <span class="trigger-avg" id="meteorAvg"></span>
-          </div>
-        </div>
-        <div class="trigger-row">
-          <span>⚡ 雷擊符文發動：</span>
-          <div class="trigger-val-container">
-            <span class="trigger-val" id="lightningVal">未裝備雷擊</span>
-            <span class="trigger-avg" id="lightningAvg"></span>
-          </div>
+        <div class="trigger-row-list" id="triggerRowList">
+          <div style="color: #666; font-size: 11px; text-align: center; padding: 4px;">尚未裝備任何具實戰估算之符文</div>
         </div>
       </div>
 
@@ -704,6 +670,9 @@
         </div>
         <div class="calc-formula" id="hpFormulaDetails">
           <span class="highlight-hp">[生命]</span> (0 + 0 + 0) × (1 + 0%) = 0
+        </div>
+        <div class="calc-formula" id="buildingAtkFormulaDetails">
+          <span class="highlight-building">[建築傷害]</span> (0 + 0) × (1 + 0%) = 0
         </div>
       </div>
     </div>
@@ -739,7 +708,7 @@
       { id: 11, name: "雷擊", rarity: "傳說" }
     ];
 
-    // 輔助函式：取得各等級機率與技能趴數 (供傳說與恢復符文解析)
+    // 輔助函式：取得各等級機率與技能趴數
     function getRuneProcData(runeName, level) {
       if (runeName === "治癒") {
         if (level <= 10) return { procRate: 0.05, skillRatio: 0.01 + (level - 1) * 0.001 + (level >= 6 ? 0.005 : 0) };
@@ -1149,7 +1118,8 @@
       attack: 0,
       hp: 0,
       constellationAttack: 0,
-      constellationHp: 0
+      constellationHp: 0,
+      constellationBuildingAtk: 0
     };
 
     // 造型加成 (預設 0.0)
@@ -1304,22 +1274,13 @@
       let runeFlatHp = 0;
       let runeAtkPct = 0;
       let runeHpPct = 0;
-
-      // 紀錄觸發類符文之參數
-      let vampInfo = null;        // 吸血
-      let healInfo = null;        // 治癒
-      let sacInfo = null;         // 犧牲
-      let tripleHitInfo = null;   // 三重衝擊
-      let destroyerInfo = null;   // 破壞者 I
-      let destroyer2Info = null;  // 破壞者 II
-      let destroyer3Info = null;  // 破壞者 III
-      let meteorInfo = null;      // 隕石
-      let lightningInfo = null;   // 雷擊
+      let totalDestroyerPct = 0; // 破壞者 I + II + III 相加%
 
       const equippedListEl = document.getElementById('equippedList');
       equippedListEl.innerHTML = '';
 
       let equippedCount = 0;
+      let triggerEffects = []; // 儲存需要進行估算的符文資料
 
       equippedSlots.forEach((rune, index) => {
         if (rune) {
@@ -1334,37 +1295,20 @@
             if (data.atkPct) runeAtkPct += data.atkPct;
             if (data.hpPct) runeHpPct += data.hpPct;
 
-            if (rune.name === "吸血") {
-              const pData = getRuneProcData("吸血", lvl);
-              vampInfo = { level: lvl, ratio: pData.skillRatio, procRate: pData.procRate };
+            // 計算破壞者系列總%
+            if (rune.name.startsWith("破壞者")) {
+              totalDestroyerPct += (data.ratio || 0);
             }
-            if (rune.name === "治癒") {
-              const pData = getRuneProcData("治癒", lvl);
-              healInfo = { level: lvl, ratio: pData.skillRatio, procRate: pData.procRate };
-            }
-            if (rune.name === "犧牲") {
-              const pData = getRuneProcData("犧牲", lvl);
-              sacInfo = { level: lvl, ratio: pData.skillRatio, procRate: pData.procRate };
-            }
-            if (rune.name === "三重衝擊") {
-              tripleHitInfo = { level: lvl, ratio: data.ratio || 0 };
-            }
-            if (rune.name === "破壞者 I") {
-              destroyerInfo = { level: lvl, ratio: data.ratio || 0 };
-            }
-            if (rune.name === "破壞者 II") {
-              destroyer2Info = { level: lvl, ratio: data.ratio || 0 };
-            }
-            if (rune.name === "破壞者 III") {
-              destroyer3Info = { level: lvl, ratio: data.ratio || 0 };
-            }
-            if (rune.name === "隕石") {
-              const pData = getRuneProcData("隕石", lvl);
-              meteorInfo = { level: lvl, ratio: pData.skillRatio, procRate: pData.procRate };
-            }
-            if (rune.name === "雷擊") {
-              const pData = getRuneProcData("雷擊", lvl);
-              lightningInfo = { level: lvl, ratio: pData.skillRatio, procRate: pData.procRate };
+
+            // 收集需展示發動估算的符文
+            if (["破壞者 I", "破壞者 II", "破壞者 III", "三重衝擊", "吸血", "治癒", "犧牲", "隕石", "雷擊"].includes(rune.name)) {
+              const pData = getRuneProcData(rune.name, lvl);
+              triggerEffects.push({
+                name: rune.name,
+                level: lvl,
+                ratio: data.ratio || pData.skillRatio,
+                procRate: pData.procRate
+              });
             }
           }
 
@@ -1400,98 +1344,81 @@
       const baseHpSum = playerStats.hp + playerStats.constellationHp + runeFlatHp;
       const finalHp = Math.round(baseHpSum * (1 + totalHpPct));
 
+      // 3. 計算最終對建築物傷害 = (最終傷害 + 星座建築傷害) * (1 + 破壞者總相加%)
+      const baseBuildingAtkSum = finalAtk + playerStats.constellationBuildingAtk;
+      const finalBuildingAtk = Math.round(baseBuildingAtkSum * (1 + totalDestroyerPct));
+
       // 更新結果 UI
       document.getElementById('finalAttackVal').innerText = finalAtk.toLocaleString();
       document.getElementById('finalHpVal').innerText = finalHp.toLocaleString();
+      document.getElementById('finalBuildingAtkVal').innerText = finalBuildingAtk.toLocaleString();
 
-      // ===== 更新發動單次數值與期望值估算 =====
+      // ===== 動態更新「符文實戰發動估算」面板 =====
+      const triggerRowListEl = document.getElementById('triggerRowList');
+      triggerRowListEl.innerHTML = '';
 
-      // 破壞者 I~III
-      if (destroyerInfo) {
-        const buildingAtk = Math.round(finalAtk * (1 + destroyerInfo.ratio));
-        document.getElementById('destroyerVal').innerText = `攻擊力提升至 ${buildingAtk.toLocaleString()} (+${(destroyerInfo.ratio * 100).toFixed(1)}%)`;
+      if (triggerEffects.length === 0) {
+        triggerRowListEl.innerHTML = '<div style="color: #666; font-size: 11px; text-align: center; padding: 4px;">尚未裝備任何具實戰估算之符文</div>';
       } else {
-        document.getElementById('destroyerVal').innerText = "未裝備破壞者 I";
-      }
+        triggerEffects.forEach(item => {
+          const rowEl = document.createElement('div');
+          rowEl.className = 'trigger-row';
 
-      if (destroyer2Info) {
-        const buildingAtk2 = Math.round(finalAtk * (1 + destroyer2Info.ratio));
-        document.getElementById('destroyer2Val').innerText = `攻擊力提升至 ${buildingAtk2.toLocaleString()} (+${(destroyer2Info.ratio * 100).toFixed(1)}%)`;
-      } else {
-        document.getElementById('destroyer2Val').innerText = "未裝備破壞者 II";
-      }
+          let icon = "⚡";
+          let label = item.name;
+          let valText = "";
+          let avgText = "";
 
-      if (destroyer3Info) {
-        const buildingAtk3 = Math.round(finalAtk * (1 + destroyer3Info.ratio));
-        document.getElementById('destroyer3Val').innerText = `攻擊力提升至 ${buildingAtk3.toLocaleString()} (+${(destroyer3Info.ratio * 100).toFixed(1)}%)`;
-      } else {
-        document.getElementById('destroyer3Val').innerText = "未裝備破壞者 III";
-      }
+          if (item.name.startsWith("破壞者")) {
+            icon = "🏰";
+            valText = `建築傷害加成 +${(item.ratio * 100).toFixed(1)}% (Lv.${item.level})`;
+          } else if (item.name === "三重衝擊") {
+            icon = "⚔️";
+            const extraDamage = Math.round(finalAtk * item.ratio);
+            const avgDamage = Math.round(extraDamage / 3);
+            valText = `單次加成 ${extraDamage.toLocaleString()} (Lv.${item.level})`;
+            avgText = `⚖️ 平均每下：+${avgDamage.toLocaleString()} 傷害`;
+          } else if (item.name === "吸血") {
+            icon = "🩸";
+            const vampHeal = Math.round(finalAtk * item.ratio);
+            const avgVamp = Math.round(vampHeal * item.procRate);
+            valText = `單次恢復 ${vampHeal.toLocaleString()} (Lv.${item.level})`;
+            avgText = `⚖️ 平均每下：+${avgVamp.toLocaleString()} 生命 (${(item.procRate * 100)}%)`;
+          } else if (item.name === "治癒") {
+            icon = "💚";
+            const healAmount = Math.round(finalHp * item.ratio);
+            const avgHeal = Math.round(healAmount * item.procRate);
+            valText = `單次恢復 ${healAmount.toLocaleString()} (Lv.${item.level})`;
+            avgText = `⚖️ 平均被擊：+${avgHeal.toLocaleString()} 生命 (${(item.procRate * 100)}%)`;
+          } else if (item.name === "犧牲") {
+            icon = "💀";
+            const sacAmount = Math.round(finalHp * item.ratio);
+            const avgSac = Math.round(sacAmount * item.procRate);
+            valText = `單次恢復 ${sacAmount.toLocaleString()} (Lv.${item.level})`;
+            avgText = `⚖️ 平均陣亡：+${avgSac.toLocaleString()} 生命 (${(item.procRate * 100)}%)`;
+          } else if (item.name === "隕石") {
+            icon = "☄️";
+            const meteorDmg = Math.round(finalAtk * item.ratio);
+            const avgMeteor = Math.round(meteorDmg * item.procRate);
+            valText = `單次技能 ${meteorDmg.toLocaleString()} (Lv.${item.level})`;
+            avgText = `⚖️ 平均每下：+${avgMeteor.toLocaleString()} 傷害 (${(item.procRate * 100).toFixed(0)}%)`;
+          } else if (item.name === "雷擊") {
+            icon = "⚡";
+            const lightningDmg = Math.round(finalAtk * item.ratio);
+            const avgLightning = Math.round(lightningDmg * item.procRate);
+            valText = `單次技能 ${lightningDmg.toLocaleString()} (Lv.${item.level})`;
+            avgText = `⚖️ 平均每下：+${avgLightning.toLocaleString()} 傷害 (${(item.procRate * 100)}%)`;
+          }
 
-      // 三重衝擊 (每3下發動一次)
-      if (tripleHitInfo) {
-        const extraDamage = Math.round(finalAtk * tripleHitInfo.ratio);
-        const avgDamage = Math.round(extraDamage / 3);
-        document.getElementById('tripleHitVal').innerText = `單次加成 ${extraDamage.toLocaleString()} (Lv.${tripleHitInfo.level})`;
-        document.getElementById('tripleHitAvg').innerText = `⚖️ 平均每下：+${avgDamage.toLocaleString()} 傷害`;
-      } else {
-        document.getElementById('tripleHitVal').innerText = "未裝備三重衝擊";
-        document.getElementById('tripleHitAvg').innerText = "";
-      }
-
-      // 吸血 (機率15%~30%)
-      if (vampInfo) {
-        const vampHealAmount = Math.round(finalAtk * vampInfo.ratio);
-        const avgVampHeal = Math.round(vampHealAmount * vampInfo.procRate);
-        document.getElementById('vampHealVal').innerText = `單次恢復 ${vampHealAmount.toLocaleString()} (Lv.${vampInfo.level})`;
-        document.getElementById('vampHealAvg').innerText = `⚖️ 平均每下：+${avgVampHeal.toLocaleString()} 生命 (${(vampInfo.procRate * 100)}%)`;
-      } else {
-        document.getElementById('vampHealVal').innerText = "未裝備吸血符文";
-        document.getElementById('vampHealAvg').innerText = "";
-      }
-
-      // 治癒 (機率5%~10%)
-      if (healInfo) {
-        const healRuneAmount = Math.round(finalHp * healInfo.ratio);
-        const avgHealRune = Math.round(healRuneAmount * healInfo.procRate);
-        document.getElementById('healRuneVal').innerText = `單次恢復 ${healRuneAmount.toLocaleString()} (Lv.${healInfo.level})`;
-        document.getElementById('healRuneAvg').innerText = `⚖️ 平均被擊：+${avgHealRune.toLocaleString()} 生命 (${(healInfo.procRate * 100)}%)`;
-      } else {
-        document.getElementById('healRuneVal').innerText = "未裝備治癒符文";
-        document.getElementById('healRuneAvg').innerText = "";
-      }
-
-      // 犧牲 (機率35%~50%)
-      if (sacInfo) {
-        const sacRuneAmount = Math.round(finalHp * sacInfo.ratio);
-        const avgSacRune = Math.round(sacRuneAmount * sacInfo.procRate);
-        document.getElementById('sacRuneVal').innerText = `單次恢復 ${sacRuneAmount.toLocaleString()} (Lv.${sacInfo.level})`;
-        document.getElementById('sacRuneAvg').innerText = `⚖️ 平均陣亡：+${avgSacRune.toLocaleString()} 生命 (${(sacInfo.procRate * 100)}%)`;
-      } else {
-        document.getElementById('sacRuneVal').innerText = "未裝備犧牲符文";
-        document.getElementById('sacRuneAvg').innerText = "";
-      }
-
-      // 隕石 (機率50%~65%)
-      if (meteorInfo) {
-        const meteorDmg = Math.round(finalAtk * meteorInfo.ratio);
-        const avgMeteorDmg = Math.round(meteorDmg * meteorInfo.procRate);
-        document.getElementById('meteorVal').innerText = `單次技能 ${meteorDmg.toLocaleString()} (Lv.${meteorInfo.level})`;
-        document.getElementById('meteorAvg').innerText = `⚖️ 平均每下：+${avgMeteorDmg.toLocaleString()} 傷害 (${(meteorInfo.procRate * 100).toFixed(0)}%)`;
-      } else {
-        document.getElementById('meteorVal').innerText = "未裝備隕石";
-        document.getElementById('meteorAvg').innerText = "";
-      }
-
-      // 雷擊 (機率40%~65%)
-      if (lightningInfo) {
-        const lightningDmg = Math.round(finalAtk * lightningInfo.ratio);
-        const avgLightningDmg = Math.round(lightningDmg * lightningInfo.procRate);
-        document.getElementById('lightningVal').innerText = `單次技能 ${lightningDmg.toLocaleString()} (Lv.${lightningInfo.level})`;
-        document.getElementById('lightningAvg').innerText = `⚖️ 平均每下：+${avgLightningDmg.toLocaleString()} 傷害 (${(lightningInfo.procRate * 100)}%)`;
-      } else {
-        document.getElementById('lightningVal').innerText = "未裝備雷擊";
-        document.getElementById('lightningAvg').innerText = "";
+          rowEl.innerHTML = `
+            <span>${icon} ${label}：</span>
+            <div class="trigger-val-container">
+              <span class="trigger-val">${valText}</span>
+              ${avgText ? `<span class="trigger-avg">${avgText}</span>` : ''}
+            </div>
+          `;
+          triggerRowListEl.appendChild(rowEl);
+        });
       }
 
       // 更新計算過程 UI
@@ -1500,6 +1427,9 @@
       
       document.getElementById('hpFormulaDetails').innerHTML = 
         `<span class="highlight-hp">[生命]</span> (${playerStats.hp} + ${playerStats.constellationHp} + ${runeFlatHp}) × (1 + ${(totalHpPct * 100).toFixed(1)}%) = <b>${finalHp.toLocaleString()}</b>`;
+
+      document.getElementById('buildingAtkFormulaDetails').innerHTML = 
+        `<span class="highlight-building">[建築傷害]</span> (${finalAtk.toLocaleString()} + ${playerStats.constellationBuildingAtk}) × (1 + ${(totalDestroyerPct * 100).toFixed(1)}%) = <b>${finalBuildingAtk.toLocaleString()}</b>`;
     }
   </script>
 </body>
