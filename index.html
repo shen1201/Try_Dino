@@ -73,6 +73,37 @@
       }
     }
 
+    /* 存檔 / 載入按鈕區塊 */
+    .file-action-bar {
+      width: 100%;
+      display: flex;
+      gap: 10px;
+      justify-content: space-between;
+    }
+
+    .action-btn {
+      flex: 1;
+      padding: 10px;
+      border: 1.5px solid var(--border-color);
+      border-radius: 8px;
+      background-color: #232330;
+      color: #76c720;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .action-btn:hover {
+      background-color: #2c2c3d;
+      border-color: #76c720;
+      box-shadow: 0 0 8px rgba(118, 199, 32, 0.3);
+    }
+
     /* 頂部：5個放置槽 (環狀/五角佈局) */
     .slot-container {
       position: relative;
@@ -224,9 +255,10 @@
       background: linear-gradient(135deg, #1f222e, #161821);
       border: 2px solid #76c720;
       border-radius: 12px;
-      padding: 12px;
-      display: flex;
-      justify-content: space-around;
+      padding: 12px 8px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
       align-items: center;
       box-shadow: 0 0 12px rgba(118, 199, 32, 0.2);
     }
@@ -236,18 +268,25 @@
       flex-direction: column;
       align-items: center;
       gap: 2px;
+      text-align: center;
     }
 
     .result-title {
-      font-size: 12px;
+      font-size: 11px;
       color: #a0a0b0;
+      white-space: nowrap;
     }
 
     .result-value {
-      font-size: 17px;
+      font-size: 15px;
       font-weight: bold;
       color: #76c720;
       text-shadow: 0 0 6px rgba(118, 199, 32, 0.4);
+    }
+
+    .result-value.dps {
+      color: #00e5ff;
+      text-shadow: 0 0 6px rgba(0, 229, 255, 0.4);
     }
 
     .result-value.building {
@@ -409,6 +448,7 @@
 
     .highlight-atk { color: #fbc02d; font-weight: bold; }
     .highlight-hp { color: #4caf50; font-weight: bold; }
+    .highlight-dps { color: #00e5ff; font-weight: bold; }
     .highlight-building { color: #ff9800; font-weight: bold; }
 
     /* 符文展示板 */
@@ -534,6 +574,13 @@
   <div class="main-wrapper">
     <!-- ===== 左欄：符文槽位與選單區塊 ===== -->
     <div class="left-column">
+      <!-- 檔案匯出匯入按鈕 (支援 CSV) -->
+      <div class="file-action-bar">
+        <button class="action-btn" onclick="exportCSV()">📊 匯出/下載 CSV 試算表</button>
+        <button class="action-btn" onclick="document.getElementById('importFileInput').click()">📂 匯入 CSV 恢復設計</button>
+        <input type="file" id="importFileInput" style="display: none;" accept=".csv" onchange="importCSV(event)">
+      </div>
+
       <!-- 5 個放置槽 -->
       <div class="slot-container">
         <div class="slot-wrapper">
@@ -627,7 +674,7 @@
         </div>
       </div>
 
-      <!-- 最終計算結果顯示 -->
+      <!-- 最終計算結果顯示 (4欄) -->
       <div class="result-panel">
         <div class="result-item">
           <span class="result-title">最終總攻擊力</span>
@@ -638,7 +685,11 @@
           <span class="result-value" id="finalHpVal">0</span>
         </div>
         <div class="result-item">
-          <span class="result-title">最終對建築物傷害</span>
+          <span class="result-title">最終 DPS</span>
+          <span class="result-value dps" id="finalDpsVal">0</span>
+        </div>
+        <div class="result-item">
+          <span class="result-title">對建築物傷害</span>
           <span class="result-value building" id="finalBuildingAtkVal">0</span>
         </div>
       </div>
@@ -670,6 +721,9 @@
         </div>
         <div class="calc-formula" id="hpFormulaDetails">
           <span class="highlight-hp">[生命]</span> (0 + 0 + 0) × (1 + 0%) = 0
+        </div>
+        <div class="calc-formula" id="dpsFormulaDetails">
+          <span class="highlight-dps">[DPS]</span> 0 + 0 (符文平均每下傷害) = 0
         </div>
         <div class="calc-formula" id="buildingAtkFormulaDetails">
           <span class="highlight-building">[建築傷害]</span> (0 + 0) × (1 + 0%) = 0
@@ -1128,6 +1182,9 @@
       hp: 0.0
     };
 
+    // 全局觸發效果快照 (供 CSV 匯出使用)
+    let lastTriggerEffectsCalculated = [];
+
     window.onload = () => {
       initLevelSelects();
       renderRunes();
@@ -1281,6 +1338,7 @@
 
       let equippedCount = 0;
       let triggerEffects = []; // 儲存需要進行估算的符文資料
+      let runeAvgDamageSum = 0; // 記錄符文提供的平均每下傷害 (供 DPS 使用)
 
       equippedSlots.forEach((rune, index) => {
         if (rune) {
@@ -1348,14 +1406,10 @@
       const baseBuildingAtkSum = finalAtk + playerStats.constellationBuildingAtk;
       const finalBuildingAtk = Math.round(baseBuildingAtkSum * (1 + totalDestroyerPct));
 
-      // 更新結果 UI
-      document.getElementById('finalAttackVal').innerText = finalAtk.toLocaleString();
-      document.getElementById('finalHpVal').innerText = finalHp.toLocaleString();
-      document.getElementById('finalBuildingAtkVal').innerText = finalBuildingAtk.toLocaleString();
-
-      // ===== 動態更新「符文實戰發動估算」面板 =====
+      // ===== 動態更新「符文實戰發動估算」面板並累加 DPS 傷害 =====
       const triggerRowListEl = document.getElementById('triggerRowList');
       triggerRowListEl.innerHTML = '';
+      lastTriggerEffectsCalculated = []; // 重置快照
 
       if (triggerEffects.length === 0) {
         triggerRowListEl.innerHTML = '<div style="color: #666; font-size: 11px; text-align: center; padding: 4px;">尚未裝備任何具實戰估算之符文</div>';
@@ -1376,6 +1430,7 @@
             icon = "⚔️";
             const extraDamage = Math.round(finalAtk * item.ratio);
             const avgDamage = Math.round(extraDamage / 3);
+            runeAvgDamageSum += avgDamage; // 累加至 DPS
             valText = `單次加成 ${extraDamage.toLocaleString()} (Lv.${item.level})`;
             avgText = `⚖️ 平均每下：+${avgDamage.toLocaleString()} 傷害`;
           } else if (item.name === "吸血") {
@@ -1400,15 +1455,24 @@
             icon = "☄️";
             const meteorDmg = Math.round(finalAtk * item.ratio);
             const avgMeteor = Math.round(meteorDmg * item.procRate);
+            runeAvgDamageSum += avgMeteor; // 累加至 DPS
             valText = `單次技能 ${meteorDmg.toLocaleString()} (Lv.${item.level})`;
             avgText = `⚖️ 平均每下：+${avgMeteor.toLocaleString()} 傷害 (${(item.procRate * 100).toFixed(0)}%)`;
           } else if (item.name === "雷擊") {
             icon = "⚡";
             const lightningDmg = Math.round(finalAtk * item.ratio);
             const avgLightning = Math.round(lightningDmg * item.procRate);
+            runeAvgDamageSum += avgLightning; // 累加至 DPS
             valText = `單次技能 ${lightningDmg.toLocaleString()} (Lv.${item.level})`;
             avgText = `⚖️ 平均每下：+${avgLightning.toLocaleString()} 傷害 (${(item.procRate * 100)}%)`;
           }
+
+          // 記錄至全域變數以供 CSV 導出
+          lastTriggerEffectsCalculated.push({
+            name: label,
+            singleText: valText,
+            avgText: avgText
+          });
 
           rowEl.innerHTML = `
             <span>${icon} ${label}：</span>
@@ -1421,6 +1485,15 @@
         });
       }
 
+      // 4. 計算最終 DPS = 最終總攻擊力 + 符文平均每下傷害總和
+      const finalDps = finalAtk + runeAvgDamageSum;
+
+      // 更新結果 UI
+      document.getElementById('finalAttackVal').innerText = finalAtk.toLocaleString();
+      document.getElementById('finalHpVal').innerText = finalHp.toLocaleString();
+      document.getElementById('finalDpsVal').innerText = finalDps.toLocaleString();
+      document.getElementById('finalBuildingAtkVal').innerText = finalBuildingAtk.toLocaleString();
+
       // 更新計算過程 UI
       document.getElementById('atkFormulaDetails').innerHTML = 
         `<span class="highlight-atk">[攻擊]</span> (${playerStats.attack} + ${playerStats.constellationAttack} + ${runeFlatAtk}) × (1 + ${(totalAtkPct * 100).toFixed(1)}%) = <b>${finalAtk.toLocaleString()}</b>`;
@@ -1428,8 +1501,197 @@
       document.getElementById('hpFormulaDetails').innerHTML = 
         `<span class="highlight-hp">[生命]</span> (${playerStats.hp} + ${playerStats.constellationHp} + ${runeFlatHp}) × (1 + ${(totalHpPct * 100).toFixed(1)}%) = <b>${finalHp.toLocaleString()}</b>`;
 
+      document.getElementById('dpsFormulaDetails').innerHTML = 
+        `<span class="highlight-dps">[DPS]</span> ${finalAtk.toLocaleString()} + ${runeAvgDamageSum.toLocaleString()} (符文平均每下傷害) = <b>${finalDps.toLocaleString()}</b>`;
+
       document.getElementById('buildingAtkFormulaDetails').innerHTML = 
         `<span class="highlight-building">[建築傷害]</span> (${finalAtk.toLocaleString()} + ${playerStats.constellationBuildingAtk}) × (1 + ${(totalDestroyerPct * 100).toFixed(1)}%) = <b>${finalBuildingAtk.toLocaleString()}</b>`;
+    }
+
+    // ===== 輔助函式：取得目前時間格式 YYYYMMDD_HHMMSS =====
+    function getCurrentFormattedTime() {
+      const now = new Date();
+      const pad = (num) => String(num).padStart(2, '0');
+      const year = now.getFullYear();
+      const month = pad(now.getMonth() + 1);
+      const day = pad(now.getDate());
+      const hours = pad(now.getHours());
+      const minutes = pad(now.getMinutes());
+      const seconds = pad(now.getSeconds());
+      return `${year}${month}${day}_${hours}${minutes}${seconds}`;
+    }
+
+    // ===== 全新穩定版 CSV 匯出與匯入功能 (包含自訂檔名與預設時間) =====
+
+    function exportCSV() {
+      // 產生預設檔名：符文配置報表_目前的年月日時分秒
+      const defaultFileName = `符文配置報表_${getCurrentFormattedTime()}`;
+      
+      // 彈出對話框供使用者自訂檔名
+      let userInput = prompt("請輸入欲儲存的檔案名稱：", defaultFileName);
+      
+      // 若使用者點擊「取消」或沒輸入任何內容則中斷下載
+      if (userInput === null) return;
+      userInput = userInput.trim();
+      if (!userInput) userInput = defaultFileName;
+
+      // 自動補上 .csv 副檔名
+      if (!userInput.toLowerCase().endsWith('.csv')) {
+        userInput += '.csv';
+      }
+
+      const finalAtk = document.getElementById('finalAttackVal').innerText.replace(/,/g, '');
+      const finalHp = document.getElementById('finalHpVal').innerText.replace(/,/g, '');
+      const finalDps = document.getElementById('finalDpsVal').innerText.replace(/,/g, '');
+      const finalBuildingAtk = document.getElementById('finalBuildingAtkVal').innerText.replace(/,/g, '');
+
+      // 人類閱讀區域
+      let csvLines = [
+        `"=== 符文配置與計算結果報表 ==="`,
+        `"匯出日期", "${new Date().toLocaleString()}"`,
+        `""`,
+        `"--- 最終計算結果 ---"`,
+        `"最終總攻擊力", ${finalAtk}`,
+        `"最終總生命值", ${finalHp}`,
+        `"最終 DPS (平均每下總傷害)", ${finalDps}`,
+        `"最終對建築物傷害", ${finalBuildingAtk}`,
+        `""`,
+        `"--- 玩家與星座基礎數值 ---"`,
+        `"基礎攻擊力", ${playerStats.attack}`,
+        `"基礎血量", ${playerStats.hp}`,
+        `"星座攻擊力", ${playerStats.constellationAttack}`,
+        `"星座血量", ${playerStats.constellationHp}`,
+        `"星座建築物傷害", ${playerStats.constellationBuildingAtk}`,
+        `"皮蛋造型(攻擊%)", "${(skinBonus.atk * 100).toFixed(1)}%"`,
+        `"巢造型(血量%)", "${(skinBonus.hp * 100).toFixed(1)}%"`,
+        `""`,
+        `"--- 裝備符文狀態 ---"`,
+        `"槽位", "符文名稱", "等級", "效果說明"`
+      ];
+
+      equippedSlots.forEach((rune, index) => {
+        if (rune) {
+          const lvl = slotLevels[index];
+          const effect = getRuneEffectText(rune.name, lvl).replace(/"/g, '""');
+          csvLines.push(`"槽位 ${index + 1}", "${rune.name}", "Lv.${lvl}", "${effect}"`);
+        } else {
+          csvLines.push(`"槽位 ${index + 1}", "未裝備", "-", "-"`);
+        }
+      });
+
+      // 實戰發動估算區塊
+      csvLines.push(`""`);
+      csvLines.push(`"--- 符文實戰發動估算 (單次發動 / 平均期望) ---"`);
+      csvLines.push(`"符文名稱", "單次效果/傷害/恢復量", "平均期望數值"`);
+
+      if (lastTriggerEffectsCalculated.length === 0) {
+        csvLines.push(`"尚無裝備具實戰估算之符文", "-", "-"`);
+      } else {
+        lastTriggerEffectsCalculated.forEach(item => {
+          const single = item.singleText.replace(/"/g, '""');
+          const avg = (item.avgText || "-").replace(/"/g, '""');
+          csvLines.push(`"${item.name}", "${single}", "${avg}"`);
+        });
+      }
+
+      // 打包復原用 JSON 並進行 Base64 編碼
+      const rawData = {
+        stats: playerStats,
+        skins: skinBonus,
+        eggSkinVal: document.getElementById('eggSkinSelect').value,
+        nestSkinVal: document.getElementById('nestSkinSelect').value,
+        equipped: equippedSlots.map((r, i) => r ? { id: r.id, name: r.name, level: slotLevels[i] } : null)
+      };
+
+      const base64Data = btoa(encodeURIComponent(JSON.stringify(rawData)));
+
+      csvLines.push(`""`);
+      csvLines.push(`"=== 系統自動復原數據 (請勿修改以下內容) ==="`);
+      csvLines.push(`"[DATA_START]:${base64Data}"`);
+
+      // UTF-8 BOM 避免 Excel 亂碼
+      const csvContent = "\uFEFF" + csvLines.join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = userInput;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function importCSV(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const content = e.target.result;
+          const tagIndex = content.indexOf('[DATA_START]:');
+
+          if (tagIndex === -1) {
+            throw new Error("找不到復原數據標籤");
+          }
+
+          // 擷取 Base64 字串並解碼
+          let base64Data = content.substring(tagIndex + '[DATA_START]:'.length).trim();
+          base64Data = base64Data.replace(/["\r\n]/g, '');
+
+          const jsonStr = decodeURIComponent(atob(base64Data));
+          const rawData = JSON.parse(jsonStr);
+
+          // 1. 復原數值輸入框
+          if (rawData.stats) {
+            playerStats = Object.assign(playerStats, rawData.stats);
+            document.getElementById('attackInput').value = playerStats.attack || '';
+            document.getElementById('hpInput').value = playerStats.hp || '';
+            document.getElementById('astroAttackInput').value = playerStats.constellationAttack || '';
+            document.getElementById('astroHpInput').value = playerStats.constellationHp || '';
+            document.getElementById('astroBuildingAtkInput').value = playerStats.constellationBuildingAtk || '';
+          }
+
+          // 2. 復原造型
+          if (rawData.eggSkinVal !== undefined) {
+            document.getElementById('eggSkinSelect').value = rawData.eggSkinVal;
+            skinBonus.atk = parseFloat(rawData.eggSkinVal);
+          }
+          if (rawData.nestSkinVal !== undefined) {
+            document.getElementById('nestSkinSelect').value = rawData.nestSkinVal;
+            skinBonus.hp = parseFloat(rawData.nestSkinVal);
+          }
+
+          // 3. 復原符文槽位
+          if (rawData.equipped && Array.isArray(rawData.equipped)) {
+            equippedSlots = [null, null, null, null, null];
+            slotLevels = [1, 1, 1, 1, 1];
+
+            rawData.equipped.forEach((item, index) => {
+              if (item && index < 5) {
+                const targetRune = runesData.find(r => r.id === item.id || r.name === item.name);
+                if (targetRune) {
+                  equippedSlots[index] = targetRune;
+                  slotLevels[index] = item.level || 1;
+                  document.getElementById(`level-slot-${index}`).value = slotLevels[index];
+                }
+              }
+            });
+          }
+
+          updateSlotsUI();
+          renderRunes();
+          calculateFinalStats();
+          alert("CSV 讀取成功！設計已完整還原。");
+        } catch (err) {
+          console.error(err);
+          alert("CSV 讀取失敗，請確保上傳的是本工具導出的 CSV 檔案。");
+        }
+      };
+      reader.readAsText(file, 'utf-8');
+      event.target.value = '';
     }
   </script>
 </body>
