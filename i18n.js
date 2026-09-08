@@ -43,6 +43,14 @@ const translations = {
     "sets.deleteTooltip": "刪除套組",
     "sets.confirmDelete": "確定要刪除「{name}」這個套組嗎？此動作無法復原。",
 
+    "statSets.title": "恐龍數值套組",
+    "statSets.defaultName": "第 {n} 套數值",
+    "statSets.renamePrompt": "為此數值套組命名：",
+    "statSets.renameTooltip": "重新命名數值套組",
+    "statSets.addTooltip": "新增數值套組 (最多 5 套)",
+    "statSets.deleteTooltip": "刪除數值套組",
+    "statSets.confirmDelete": "確定要刪除「{name}」這個數值套組嗎？此動作無法復原。",
+
     "calc.title": "詳細計算過程：",
     "calc.atkLabel": "[攻擊]",
     "calc.hpLabel": "[生命]",
@@ -160,6 +168,14 @@ const translations = {
     "sets.addTooltip": "Add set (up to 12)",
     "sets.deleteTooltip": "Delete set",
     "sets.confirmDelete": "Delete the set \"{name}\"? This cannot be undone.",
+
+    "statSets.title": "Dino Stat Sets",
+    "statSets.defaultName": "Stat Set {n}",
+    "statSets.renamePrompt": "Name this stat set:",
+    "statSets.renameTooltip": "Rename stat set",
+    "statSets.addTooltip": "Add stat set (up to 5)",
+    "statSets.deleteTooltip": "Delete stat set",
+    "statSets.confirmDelete": "Delete the stat set \"{name}\"? This cannot be undone.",
 
     "calc.title": "Calculation Details:",
     "calc.atkLabel": "[ATK]",
@@ -279,6 +295,14 @@ const translations = {
     "sets.deleteTooltip": "Eliminar conjunto",
     "sets.confirmDelete": "¿Eliminar el conjunto \"{name}\"? Esta acción no se puede deshacer.",
 
+    "statSets.title": "Conjuntos de Valores",
+    "statSets.defaultName": "Conjunto de Valores {n}",
+    "statSets.renamePrompt": "Nombra este conjunto de valores:",
+    "statSets.renameTooltip": "Renombrar conjunto de valores",
+    "statSets.addTooltip": "Añadir conjunto de valores (máx. 5)",
+    "statSets.deleteTooltip": "Eliminar conjunto de valores",
+    "statSets.confirmDelete": "¿Eliminar el conjunto de valores \"{name}\"? Esta acción no se puede deshacer.",
+
     "calc.title": "Detalles del cálculo:",
     "calc.atkLabel": "[Ataque]",
     "calc.hpLabel": "[Vida]",
@@ -397,6 +421,14 @@ const translations = {
     "sets.deleteTooltip": "Supprimer l'ensemble",
     "sets.confirmDelete": "Supprimer l'ensemble « {name} » ? Cette action est irréversible.",
 
+    "statSets.title": "Ensembles de Stats",
+    "statSets.defaultName": "Ensemble de Stats {n}",
+    "statSets.renamePrompt": "Nommez cet ensemble de stats :",
+    "statSets.renameTooltip": "Renommer l'ensemble de stats",
+    "statSets.addTooltip": "Ajouter un ensemble de stats (5 max)",
+    "statSets.deleteTooltip": "Supprimer l'ensemble de stats",
+    "statSets.confirmDelete": "Supprimer l'ensemble de stats « {name} » ? Cette action est irréversible.",
+
     "calc.title": "Détails du calcul :",
     "calc.atkLabel": "[Attaque]",
     "calc.hpLabel": "[PV]",
@@ -514,6 +546,14 @@ const translations = {
     "sets.addTooltip": "セットを追加（最大12個）",
     "sets.deleteTooltip": "セットを削除",
     "sets.confirmDelete": "「{name}」を削除しますか？この操作は取り消せません。",
+
+    "statSets.title": "数値セット",
+    "statSets.defaultName": "数値セット{n}",
+    "statSets.renamePrompt": "この数値セットの名前を入力：",
+    "statSets.renameTooltip": "数値セット名を変更",
+    "statSets.addTooltip": "数値セットを追加（最大5個）",
+    "statSets.deleteTooltip": "数値セットを削除",
+    "statSets.confirmDelete": "「{name}」を削除しますか？この操作は取り消せません。",
 
     "calc.title": "計算過程の詳細：",
     "calc.atkLabel": "[攻撃力]",

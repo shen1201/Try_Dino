@@ -17,25 +17,37 @@ let activeSetIndex = 0;
 let equippedSlots = runeSets[activeSetIndex].equippedSlots;
 let slotLevels = runeSets[activeSetIndex].slotLevels;
 
-let playerStats = {
-  attack: 0,
-  hp: 0,
-  constellationAttack: 0,
-  constellationHp: 0,
-  constellationBuildingAtk: 0
-};
+// 預設 3 套可各自命名的恐龍數值套組(基礎數值+造型%)，可手動新增到最多 5 套 (前 3 套固定、不可刪除)。
+// playerStats/skinBonus 永遠是目前啟用數值套組物件的參照，
+// 所以 validateNumber()/updateSkinBonus() 既有的屬性寫入邏輯完全不用改，會自動同步回 statSets。
+const MIN_STAT_SETS = 3;
+const MAX_STAT_SETS = 5;
 
-// 造型加成 (預設 0.0)
-let skinBonus = {
-  atk: 0.0,
-  hp: 0.0
-};
+function buildEmptyStatSet() {
+  return {
+    name: null,
+    stats: {
+      attack: 0,
+      hp: 0,
+      constellationAttack: 0,
+      constellationHp: 0,
+      constellationBuildingAtk: 0
+    },
+    skinBonus: { atk: 0.0, hp: 0.0 }
+  };
+}
+
+let statSets = Array.from({ length: MIN_STAT_SETS }, buildEmptyStatSet);
+let activeStatSetIndex = 0;
+let playerStats = statSets[activeStatSetIndex].stats;
+let skinBonus = statSets[activeStatSetIndex].skinBonus;
 
 window.onload = () => {
   initLevelSelects();
   loadFromLocalStorage();
   updateSlotsUI();
   updateSetTabsUI();
+  updateStatSetTabsUI();
   renderRunes();
   calculateFinalStats();
 };
@@ -286,6 +298,123 @@ function renameSet(index, event) {
   runeSets[index].name = trimmed || null;
   updateSetTabsUI();
   saveToLocalStorage();
+}
+
+// ===== 恐龍數值套組 (基礎數值+造型%)，架構與符文套組相同 =====
+
+function getStatSetDisplayName(index) {
+  return statSets[index].name || t('statSets.defaultName', { n: index + 1 });
+}
+
+// 重新產生所有數值套組頁籤 (數量會變動，前 MIN_STAT_SETS 套固定無法刪除)
+function updateStatSetTabsUI() {
+  const container = document.getElementById('statSetTabs');
+  container.innerHTML = '';
+
+  statSets.forEach((_, index) => {
+    const name = getStatSetDisplayName(index);
+    const tabEl = document.createElement('button');
+    tabEl.className = `set-tab ${index === activeStatSetIndex ? 'active' : ''}`;
+    tabEl.onclick = () => switchStatSet(index);
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'set-tab-name';
+    nameEl.textContent = name;
+    nameEl.title = name;
+    tabEl.appendChild(nameEl);
+
+    const editEl = document.createElement('span');
+    editEl.className = 'set-tab-edit';
+    editEl.textContent = '✏️';
+    editEl.title = t('statSets.renameTooltip');
+    editEl.onclick = (event) => renameStatSet(index, event);
+    tabEl.appendChild(editEl);
+
+    if (index >= MIN_STAT_SETS) {
+      const deleteEl = document.createElement('span');
+      deleteEl.className = 'set-tab-delete';
+      deleteEl.textContent = '🗑️';
+      deleteEl.title = t('statSets.deleteTooltip');
+      deleteEl.onclick = (event) => deleteStatSet(index, event);
+      tabEl.appendChild(deleteEl);
+    }
+
+    container.appendChild(tabEl);
+  });
+
+  if (statSets.length < MAX_STAT_SETS) {
+    const addEl = document.createElement('button');
+    addEl.className = 'set-tab-add';
+    addEl.textContent = '➕';
+    addEl.title = t('statSets.addTooltip');
+    addEl.onclick = () => addStatSet();
+    container.appendChild(addEl);
+  }
+}
+
+// 把目前啟用數值套組的內容同步顯示到數值輸入框
+function refreshStatInputsUI() {
+  document.getElementById('attackInput').value = playerStats.attack || '';
+  document.getElementById('hpInput').value = playerStats.hp || '';
+  document.getElementById('astroAttackInput').value = playerStats.constellationAttack || '';
+  document.getElementById('astroHpInput').value = playerStats.constellationHp || '';
+  document.getElementById('astroBuildingAtkInput').value = playerStats.constellationBuildingAtk || '';
+  document.getElementById('eggSkinInput').value = (skinBonus.atk * 100).toFixed(1);
+  document.getElementById('nestSkinInput').value = (skinBonus.hp * 100).toFixed(1);
+}
+
+// 切換啟用中的數值套組
+function switchStatSet(index) {
+  if (index === activeStatSetIndex) return;
+
+  activeStatSetIndex = index;
+  playerStats = statSets[index].stats;
+  skinBonus = statSets[index].skinBonus;
+
+  refreshStatInputsUI();
+  updateStatSetTabsUI();
+  calculateFinalStats();
+}
+
+// 重新命名指定數值套組 (點擊套組上的 ✏️ 觸發，不切換套組)
+function renameStatSet(index, event) {
+  if (event) event.stopPropagation();
+  const input = prompt(t('statSets.renamePrompt'), getStatSetDisplayName(index));
+  if (input === null) return;
+  const trimmed = input.trim();
+  statSets[index].name = trimmed || null;
+  updateStatSetTabsUI();
+  saveToLocalStorage();
+}
+
+// 新增一套數值套組 (最多 MAX_STAT_SETS 套)，新增後自動切換過去
+function addStatSet() {
+  if (statSets.length >= MAX_STAT_SETS) return;
+  statSets.push(buildEmptyStatSet());
+  switchStatSet(statSets.length - 1);
+  saveToLocalStorage();
+}
+
+// 刪除指定數值套組 (僅限手動新增、index >= MIN_STAT_SETS 的套組)
+function deleteStatSet(index, event) {
+  if (event) event.stopPropagation();
+  if (index < MIN_STAT_SETS) return;
+
+  if (!confirm(t('statSets.confirmDelete', { name: getStatSetDisplayName(index) }))) return;
+
+  statSets.splice(index, 1);
+
+  if (activeStatSetIndex === index) {
+    activeStatSetIndex = index - 1;
+  } else if (activeStatSetIndex > index) {
+    activeStatSetIndex -= 1;
+  }
+  playerStats = statSets[activeStatSetIndex].stats;
+  skinBonus = statSets[activeStatSetIndex].skinBonus;
+
+  refreshStatInputsUI();
+  updateStatSetTabsUI();
+  calculateFinalStats();
 }
 
 // 動態拼裝效果文字，取代硬編碼原創文字
@@ -557,8 +686,12 @@ function parseEquippedArray(equippedArr) {
 function saveToLocalStorage() {
   try {
     const data = {
-      stats: playerStats,
-      skins: skinBonus,
+      activeStatSetIndex,
+      statSets: statSets.map(set => ({
+        name: set.name,
+        stats: set.stats,
+        skins: set.skinBonus
+      })),
       activeSetIndex,
       sets: runeSets.map(set => ({
         name: set.name,
@@ -584,25 +717,36 @@ function loadFromLocalStorage() {
   try {
     const data = JSON.parse(raw);
 
-    // 1. 復原數值輸入框
-    if (data.stats) {
-      playerStats = Object.assign(playerStats, data.stats);
-      document.getElementById('attackInput').value = playerStats.attack || '';
-      document.getElementById('hpInput').value = playerStats.hp || '';
-      document.getElementById('astroAttackInput').value = playerStats.constellationAttack || '';
-      document.getElementById('astroHpInput').value = playerStats.constellationHp || '';
-      document.getElementById('astroBuildingAtkInput').value = playerStats.constellationBuildingAtk || '';
+    // 1. 復原數值套組 (新格式，3~5 套)，或舊格式 (單一 stats/skins) 自動搬進數值套組 1
+    if (Array.isArray(data.statSets)) {
+      statSets = data.statSets.slice(0, MAX_STAT_SETS).map(setData => ({
+        name: (setData && setData.name) || null,
+        stats: Object.assign(buildEmptyStatSet().stats, setData && setData.stats),
+        skinBonus: {
+          atk: parseFloat(setData && setData.skins && setData.skins.atk) || 0,
+          hp: parseFloat(setData && setData.skins && setData.skins.hp) || 0
+        }
+      }));
+      while (statSets.length < MIN_STAT_SETS) statSets.push(buildEmptyStatSet());
+      activeStatSetIndex = (typeof data.activeStatSetIndex === 'number' && data.activeStatSetIndex >= 0 && data.activeStatSetIndex < statSets.length)
+        ? data.activeStatSetIndex : 0;
+    } else if (data.stats || data.skins) {
+      statSets[0] = {
+        name: null,
+        stats: Object.assign(buildEmptyStatSet().stats, data.stats),
+        skinBonus: {
+          atk: parseFloat(data.skins && data.skins.atk) || 0,
+          hp: parseFloat(data.skins && data.skins.hp) || 0
+        }
+      };
+      activeStatSetIndex = 0;
     }
 
-    // 2. 復原造型加成
-    if (data.skins) {
-      skinBonus.atk = parseFloat(data.skins.atk) || 0;
-      skinBonus.hp = parseFloat(data.skins.hp) || 0;
-      document.getElementById('eggSkinInput').value = (skinBonus.atk * 100).toFixed(1);
-      document.getElementById('nestSkinInput').value = (skinBonus.hp * 100).toFixed(1);
-    }
+    playerStats = statSets[activeStatSetIndex].stats;
+    skinBonus = statSets[activeStatSetIndex].skinBonus;
+    refreshStatInputsUI();
 
-    // 3. 復原符文套組 (新格式，5~12 套)，或舊格式 (單一 equipped 陣列) 自動搬進套組 1
+    // 2. 復原符文套組 (新格式，5~12 套)，或舊格式 (單一 equipped 陣列) 自動搬進套組 1
     if (Array.isArray(data.sets)) {
       runeSets = data.sets.slice(0, MAX_SETS).map(setData => {
         const { slots, levels } = parseEquippedArray(setData && setData.equipped);
@@ -636,29 +780,25 @@ function clearSavedConfig() {
     console.error("清除 LocalStorage 失敗", err);
   }
 
-  playerStats = {
-    attack: 0,
-    hp: 0,
-    constellationAttack: 0,
-    constellationHp: 0,
-    constellationBuildingAtk: 0
-  };
-  skinBonus = { atk: 0.0, hp: 0.0 };
+  statSets = Array.from({ length: MIN_STAT_SETS }, buildEmptyStatSet);
+  activeStatSetIndex = 0;
+  playerStats = statSets[activeStatSetIndex].stats;
+  skinBonus = statSets[activeStatSetIndex].skinBonus;
+
   runeSets = Array.from({ length: MIN_SETS }, buildEmptySet);
   activeSetIndex = 0;
   equippedSlots = runeSets[activeSetIndex].equippedSlots;
   slotLevels = runeSets[activeSetIndex].slotLevels;
   selectedSlotIndex = null;
 
-  ['attackInput', 'hpInput', 'astroAttackInput', 'astroHpInput', 'astroBuildingAtkInput', 'eggSkinInput', 'nestSkinInput'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
+  refreshStatInputsUI();
   for (let i = 0; i < 5; i++) {
     document.getElementById(`level-slot-${i}`).value = 1;
   }
 
   updateSlotsUI();
   updateSetTabsUI();
+  updateStatSetTabsUI();
   renderRunes();
   calculateFinalStats();
 }
@@ -667,6 +807,7 @@ function clearSavedConfig() {
 function onLanguageChange() {
   updateSlotsUI();
   updateSetTabsUI();
+  updateStatSetTabsUI();
   renderRunes();
   calculateFinalStats();
 }
