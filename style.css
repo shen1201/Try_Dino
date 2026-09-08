@@ -90,6 +90,99 @@ body {
   border-color: #76c720;
 }
 
+/* 符文套組頁籤 */
+.set-section-title {
+  font-size: 12px;
+  font-weight: bold;
+  color: #76c720;
+  align-self: flex-start;
+}
+
+.set-tabs {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.set-tab {
+  flex: 1;
+  min-width: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 6px;
+  border: 1.5px solid var(--border-color);
+  border-radius: 8px;
+  background-color: #232330;
+  color: #b0b0c0;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.set-tab:hover {
+  border-color: #76c720;
+}
+
+.set-tab.active {
+  background-color: #76c720;
+  color: #121218;
+  border-color: #76c720;
+}
+
+.set-tab-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 90px;
+}
+
+.set-tab-edit {
+  cursor: pointer;
+  opacity: 0.8;
+  font-size: 11px;
+}
+
+.set-tab-edit:hover {
+  opacity: 1;
+}
+
+.set-tab-delete {
+  cursor: pointer;
+  opacity: 0.7;
+  font-size: 11px;
+  color: #ff5252;
+}
+
+.set-tab-delete:hover {
+  opacity: 1;
+}
+
+.set-tab-add {
+  flex: 0 0 auto;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 10px;
+  border: 1.5px dashed var(--border-color);
+  border-radius: 8px;
+  background-color: transparent;
+  color: #76c720;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.set-tab-add:hover {
+  border-color: #76c720;
+  background-color: rgba(118, 199, 32, 0.1);
+}
+
 /* 主容器：採用左右雙欄 Flex 佈局 */
 .main-wrapper {
   display: flex;

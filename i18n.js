@@ -35,6 +35,14 @@ const translations = {
     "equipped.empty": "尚未裝備任何符文",
     "equipped.remove": "卸下",
 
+    "sets.title": "符文套組",
+    "sets.defaultName": "套組 {n}",
+    "sets.renamePrompt": "為此套組命名：",
+    "sets.renameTooltip": "重新命名套組",
+    "sets.addTooltip": "新增套組 (最多 12 套)",
+    "sets.deleteTooltip": "刪除套組",
+    "sets.confirmDelete": "確定要刪除「{name}」這個套組嗎？此動作無法復原。",
+
     "calc.title": "詳細計算過程：",
     "calc.atkLabel": "[攻擊]",
     "calc.hpLabel": "[生命]",
@@ -144,6 +152,14 @@ const translations = {
     "equipped.title": "Equipped Runes",
     "equipped.empty": "No runes equipped",
     "equipped.remove": "Remove",
+
+    "sets.title": "Rune Sets",
+    "sets.defaultName": "Set {n}",
+    "sets.renamePrompt": "Name this set:",
+    "sets.renameTooltip": "Rename set",
+    "sets.addTooltip": "Add set (up to 12)",
+    "sets.deleteTooltip": "Delete set",
+    "sets.confirmDelete": "Delete the set \"{name}\"? This cannot be undone.",
 
     "calc.title": "Calculation Details:",
     "calc.atkLabel": "[ATK]",
@@ -255,6 +271,14 @@ const translations = {
     "equipped.empty": "No hay runas equipadas",
     "equipped.remove": "Quitar",
 
+    "sets.title": "Conjuntos de Runas",
+    "sets.defaultName": "Conjunto {n}",
+    "sets.renamePrompt": "Nombra este conjunto:",
+    "sets.renameTooltip": "Renombrar conjunto",
+    "sets.addTooltip": "Añadir conjunto (máx. 12)",
+    "sets.deleteTooltip": "Eliminar conjunto",
+    "sets.confirmDelete": "¿Eliminar el conjunto \"{name}\"? Esta acción no se puede deshacer.",
+
     "calc.title": "Detalles del cálculo:",
     "calc.atkLabel": "[Ataque]",
     "calc.hpLabel": "[Vida]",
@@ -365,6 +389,14 @@ const translations = {
     "equipped.empty": "Aucune rune équipée",
     "equipped.remove": "Retirer",
 
+    "sets.title": "Ensembles de Runes",
+    "sets.defaultName": "Ensemble {n}",
+    "sets.renamePrompt": "Nommez cet ensemble :",
+    "sets.renameTooltip": "Renommer l'ensemble",
+    "sets.addTooltip": "Ajouter un ensemble (12 max)",
+    "sets.deleteTooltip": "Supprimer l'ensemble",
+    "sets.confirmDelete": "Supprimer l'ensemble « {name} » ? Cette action est irréversible.",
+
     "calc.title": "Détails du calcul :",
     "calc.atkLabel": "[Attaque]",
     "calc.hpLabel": "[PV]",
@@ -474,6 +506,14 @@ const translations = {
     "equipped.title": "装備中のルーン",
     "equipped.empty": "ルーンは未装備です",
     "equipped.remove": "外す",
+
+    "sets.title": "ルーンセット",
+    "sets.defaultName": "セット{n}",
+    "sets.renamePrompt": "このセットの名前を入力：",
+    "sets.renameTooltip": "セット名を変更",
+    "sets.addTooltip": "セットを追加（最大12個）",
+    "sets.deleteTooltip": "セットを削除",
+    "sets.confirmDelete": "「{name}」を削除しますか？この操作は取り消せません。",
 
     "calc.title": "計算過程の詳細：",
     "calc.atkLabel": "[攻撃力]",
@@ -610,6 +650,9 @@ function applyStaticTranslations() {
   });
   document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
     el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
+  });
+  document.querySelectorAll('[data-i18n-tooltip]').forEach(el => {
+    el.title = t(el.getAttribute('data-i18n-tooltip'));
   });
   const titleKey = document.documentElement.getAttribute('data-i18n-title');
   if (titleKey) document.title = t(titleKey);

@@ -1,8 +1,21 @@
 // 狀態管理
 let currentFilter = null;
-let equippedSlots = [null, null, null, null, null];
-let slotLevels = [1, 1, 1, 1, 1];
 let selectedSlotIndex = null; // 目前點選、等待裝備符文的槽位
+
+// 預設 5 套可各自命名的符文套組，可手動新增到最多 12 套 (前 5 套為固定、不可刪除)。
+// equippedSlots/slotLevels 永遠是目前啟用套組陣列的參照，
+// 所以裝備/卸下/改等級時的既有邏輯完全不用改，會自動同步回 runeSets。
+const MIN_SETS = 5;
+const MAX_SETS = 12;
+
+function buildEmptySet() {
+  return { name: null, equippedSlots: [null, null, null, null, null], slotLevels: [1, 1, 1, 1, 1] };
+}
+
+let runeSets = Array.from({ length: MIN_SETS }, buildEmptySet);
+let activeSetIndex = 0;
+let equippedSlots = runeSets[activeSetIndex].equippedSlots;
+let slotLevels = runeSets[activeSetIndex].slotLevels;
 
 let playerStats = {
   attack: 0,
@@ -22,6 +35,7 @@ window.onload = () => {
   initLevelSelects();
   loadFromLocalStorage();
   updateSlotsUI();
+  updateSetTabsUI();
   renderRunes();
   calculateFinalStats();
 };
@@ -156,6 +170,122 @@ function updateSlotsUI() {
   });
 
   document.getElementById('runePickerPanel').hidden = (selectedSlotIndex === null);
+}
+
+function getSetDisplayName(index) {
+  return runeSets[index].name || t('sets.defaultName', { n: index + 1 });
+}
+
+// 重新產生所有套組頁籤 (數量會變動，前 MIN_SETS 套固定無法刪除)
+function updateSetTabsUI() {
+  const container = document.getElementById('setTabs');
+  container.innerHTML = '';
+
+  runeSets.forEach((_, index) => {
+    const name = getSetDisplayName(index);
+    const tabEl = document.createElement('button');
+    tabEl.className = `set-tab ${index === activeSetIndex ? 'active' : ''}`;
+    tabEl.onclick = () => switchSet(index);
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'set-tab-name';
+    nameEl.textContent = name;
+    nameEl.title = name;
+    tabEl.appendChild(nameEl);
+
+    const editEl = document.createElement('span');
+    editEl.className = 'set-tab-edit';
+    editEl.textContent = '✏️';
+    editEl.title = t('sets.renameTooltip');
+    editEl.onclick = (event) => renameSet(index, event);
+    tabEl.appendChild(editEl);
+
+    if (index >= MIN_SETS) {
+      const deleteEl = document.createElement('span');
+      deleteEl.className = 'set-tab-delete';
+      deleteEl.textContent = '🗑️';
+      deleteEl.title = t('sets.deleteTooltip');
+      deleteEl.onclick = (event) => deleteSet(index, event);
+      tabEl.appendChild(deleteEl);
+    }
+
+    container.appendChild(tabEl);
+  });
+
+  if (runeSets.length < MAX_SETS) {
+    const addEl = document.createElement('button');
+    addEl.className = 'set-tab-add';
+    addEl.textContent = '➕';
+    addEl.title = t('sets.addTooltip');
+    addEl.onclick = () => addSet();
+    container.appendChild(addEl);
+  }
+}
+
+// 新增一套符文套組 (最多 MAX_SETS 套)，新增後自動切換過去
+function addSet() {
+  if (runeSets.length >= MAX_SETS) return;
+  runeSets.push(buildEmptySet());
+  switchSet(runeSets.length - 1);
+  saveToLocalStorage();
+}
+
+// 刪除指定套組 (僅限手動新增、index >= MIN_SETS 的套組)
+function deleteSet(index, event) {
+  if (event) event.stopPropagation();
+  if (index < MIN_SETS) return;
+
+  if (!confirm(t('sets.confirmDelete', { name: getSetDisplayName(index) }))) return;
+
+  runeSets.splice(index, 1);
+
+  if (activeSetIndex === index) {
+    activeSetIndex = index - 1;
+  } else if (activeSetIndex > index) {
+    activeSetIndex -= 1;
+  }
+  equippedSlots = runeSets[activeSetIndex].equippedSlots;
+  slotLevels = runeSets[activeSetIndex].slotLevels;
+  selectedSlotIndex = null;
+
+  for (let i = 0; i < 5; i++) {
+    document.getElementById(`level-slot-${i}`).value = slotLevels[i];
+  }
+
+  updateSlotsUI();
+  updateSetTabsUI();
+  renderRunes();
+  calculateFinalStats();
+}
+
+// 切換啟用中的符文套組
+function switchSet(index) {
+  if (index === activeSetIndex) return;
+
+  activeSetIndex = index;
+  equippedSlots = runeSets[index].equippedSlots;
+  slotLevels = runeSets[index].slotLevels;
+  selectedSlotIndex = null;
+
+  for (let i = 0; i < 5; i++) {
+    document.getElementById(`level-slot-${i}`).value = slotLevels[i];
+  }
+
+  updateSlotsUI();
+  updateSetTabsUI();
+  renderRunes();
+  calculateFinalStats();
+}
+
+// 重新命名指定套組 (點擊套組上的 ✏️ 觸發，不切換套組)
+function renameSet(index, event) {
+  if (event) event.stopPropagation();
+  const input = prompt(t('sets.renamePrompt'), getSetDisplayName(index));
+  if (input === null) return;
+  const trimmed = input.trim();
+  runeSets[index].name = trimmed || null;
+  updateSetTabsUI();
+  saveToLocalStorage();
 }
 
 // 動態拼裝效果文字，取代硬編碼原創文字
@@ -406,12 +536,34 @@ function calculateFinalStats() {
 // ===== LocalStorage 自動儲存與還原 =====
 const LOCAL_STORAGE_KEY = 'dinoMutantRuneConfig';
 
+// 將「已裝備符文」JSON 陣列還原成 { slots, levels }
+function parseEquippedArray(equippedArr) {
+  const slots = [null, null, null, null, null];
+  const levels = [1, 1, 1, 1, 1];
+  if (Array.isArray(equippedArr)) {
+    equippedArr.forEach((item, index) => {
+      if (item && index < 5) {
+        const targetRune = runesData.find(r => r.id === item.id || r.name === item.name);
+        if (targetRune) {
+          slots[index] = targetRune;
+          levels[index] = item.level || 1;
+        }
+      }
+    });
+  }
+  return { slots, levels };
+}
+
 function saveToLocalStorage() {
   try {
     const data = {
       stats: playerStats,
       skins: skinBonus,
-      equipped: equippedSlots.map((r, i) => r ? { id: r.id, name: r.name, level: slotLevels[i] } : null)
+      activeSetIndex,
+      sets: runeSets.map(set => ({
+        name: set.name,
+        equipped: set.equippedSlots.map((r, i) => r ? { id: r.id, name: r.name, level: set.slotLevels[i] } : null)
+      }))
     };
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
   } catch (err) {
@@ -450,21 +602,25 @@ function loadFromLocalStorage() {
       document.getElementById('nestSkinInput').value = (skinBonus.hp * 100).toFixed(1);
     }
 
-    // 3. 復原符文槽位
-    if (data.equipped && Array.isArray(data.equipped)) {
-      equippedSlots = [null, null, null, null, null];
-      slotLevels = [1, 1, 1, 1, 1];
-
-      data.equipped.forEach((item, index) => {
-        if (item && index < 5) {
-          const targetRune = runesData.find(r => r.id === item.id || r.name === item.name);
-          if (targetRune) {
-            equippedSlots[index] = targetRune;
-            slotLevels[index] = item.level || 1;
-            document.getElementById(`level-slot-${index}`).value = slotLevels[index];
-          }
-        }
+    // 3. 復原符文套組 (新格式，5~12 套)，或舊格式 (單一 equipped 陣列) 自動搬進套組 1
+    if (Array.isArray(data.sets)) {
+      runeSets = data.sets.slice(0, MAX_SETS).map(setData => {
+        const { slots, levels } = parseEquippedArray(setData && setData.equipped);
+        return { name: (setData && setData.name) || null, equippedSlots: slots, slotLevels: levels };
       });
+      while (runeSets.length < MIN_SETS) runeSets.push(buildEmptySet());
+      activeSetIndex = (typeof data.activeSetIndex === 'number' && data.activeSetIndex >= 0 && data.activeSetIndex < runeSets.length)
+        ? data.activeSetIndex : 0;
+    } else if (Array.isArray(data.equipped)) {
+      const { slots, levels } = parseEquippedArray(data.equipped);
+      runeSets[0] = { name: null, equippedSlots: slots, slotLevels: levels };
+      activeSetIndex = 0;
+    }
+
+    equippedSlots = runeSets[activeSetIndex].equippedSlots;
+    slotLevels = runeSets[activeSetIndex].slotLevels;
+    for (let i = 0; i < 5; i++) {
+      document.getElementById(`level-slot-${i}`).value = slotLevels[i];
     }
   } catch (err) {
     console.error("解析已儲存的配置失敗", err);
@@ -488,8 +644,10 @@ function clearSavedConfig() {
     constellationBuildingAtk: 0
   };
   skinBonus = { atk: 0.0, hp: 0.0 };
-  equippedSlots = [null, null, null, null, null];
-  slotLevels = [1, 1, 1, 1, 1];
+  runeSets = Array.from({ length: MIN_SETS }, buildEmptySet);
+  activeSetIndex = 0;
+  equippedSlots = runeSets[activeSetIndex].equippedSlots;
+  slotLevels = runeSets[activeSetIndex].slotLevels;
   selectedSlotIndex = null;
 
   ['attackInput', 'hpInput', 'astroAttackInput', 'astroHpInput', 'astroBuildingAtkInput', 'eggSkinInput', 'nestSkinInput'].forEach(id => {
@@ -500,6 +658,7 @@ function clearSavedConfig() {
   }
 
   updateSlotsUI();
+  updateSetTabsUI();
   renderRunes();
   calculateFinalStats();
 }
@@ -507,6 +666,7 @@ function clearSavedConfig() {
 // 語言切換時重新渲染所有動態產生的文字內容
 function onLanguageChange() {
   updateSlotsUI();
+  updateSetTabsUI();
   renderRunes();
   calculateFinalStats();
 }
