@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-i18n-title="meta.titleGuide">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>《Dino Mutant》攻略(非官方)</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- 頁面頂部標題 -->
+  <div class="app-header">
+    <div class="app-title" data-i18n="header.guide">🦖 《Dino Mutant》攻略(非官方)</div>
+  </div>
+
+  <!-- 頁面導覽 -->
+  <nav class="site-nav">
+    <a href="index.html" data-i18n="nav.calculator">🧮 符文計算器</a>
+    <a href="guide.html" class="active" data-i18n="nav.guide">📖 攻略</a>
+    <select id="langSelect" class="lang-select" onchange="setLanguage(this.value)">
+      <option value="zh">中文</option>
+      <option value="en">English</option>
+      <option value="es">Español</option>
+      <option value="fr">Français</option>
+      <option value="ja">日本語</option>
+    </select>
+  </nav>
+
+  <div class="main-wrapper">
+    <div class="left-column" style="max-width: 900px;">
+
+      <!-- 泰坦（首領）機制說明 -->
+      <div class="equipped-panel">
+        <div class="panel-header"><span data-i18n="guide.mechTitle">🦖 泰坦（首領）機制核心說明</span></div>
+        <ul class="guide-list">
+          <li data-i18n-html="guide.mech1"><b>升降級機制：</b>擊敗當前首領後，下次召喚等級提升 1 級；若未在下次重生前擊敗，首領消失且下次召喚等級降低 1 級。</li>
+          <li data-i18n-html="guide.mech2"><b>獎勵領取限制：</b>首領狩獵獎勵每日限領 1 次（即使當天已無法獲取獎勵，仍可進場協助輸出）。</li>
+          <li data-i18n-html="guide.mech3"><b>額外掉落加成：</b>結算時有概率額外獲得 1 個寶箱，機率為「首領等級 × 10%」（首領達到 Lv.10 以上時機率即達 100%）。</li>
+        </ul>
+      </div>
+
+      <!-- 個人傷害排名獎勵區間 -->
+      <div class="equipped-panel">
+        <div class="panel-header"><span data-i18n="guide.rewardTitle">個人傷害排名獎勵區間</span></div>
+        <div class="guide-table-scroll" style="max-height: none;">
+          <table class="guide-table">
+            <thead>
+              <tr><th data-i18n="guide.rewardColRank">傷害名次區間</th><th data-i18n="guide.rewardColAmount">基礎獎勵數量（寶箱）</th></tr>
+            </thead>
+            <tbody id="rewardTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 泰坦 Lv.1~200 傷害與生命值 -->
+      <div class="equipped-panel">
+        <div class="panel-header"><span data-i18n="guide.titanTitle">泰坦 Lv.1 ～ 200 傷害與生命值</span></div>
+        <div class="guide-table-scroll">
+          <table class="guide-table">
+            <thead>
+              <tr><th data-i18n="guide.colLevel">等級</th><th data-i18n="guide.colDamage">泰坦傷害</th><th data-i18n="guide.colHp">泰坦生命值</th></tr>
+            </thead>
+            <tbody id="titanTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 免責聲明區塊 -->
+  <div class="disclaimer-container">
+    <div class="disclaimer-title" data-i18n="disclaimer.title">⚠️ 免責聲明與使用須知：</div>
+    <div data-i18n="disclaimer.guide.line1">1. 本頁面為《Dino Mutant》玩家個人/社群獨立整理之攻略內容，**純屬交流分享且絕無營利行為**，祝大家遊戲愉快！🎮</div>
+    <div data-i18n="disclaimer.guide.line2">2. 內容可能因遊戲版本更新而有所差異，請以遊戲內實際狀況為準。</div>
+    <div data-i18n="disclaimer.guide.line3">3. 本頁面與《Dino Mutant》遊戲官方無關，請勿用於任何商業用途。</div>
+  </div>
+
+  <script src="i18n.js"></script>
+  <script src="titan-data.js"></script>
+  <script src="guide.js"></script>
+</body>
+</html>
