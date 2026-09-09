@@ -117,6 +117,36 @@ function renderConstellationRows() {
   }).join('');
 }
 
+const ADMIN_BASE_STYLE = `
+  :root {
+    --a-bg: #0b0c14;
+    --a-panel: #15172420;
+    --a-panel-solid: #161826;
+    --a-border: #2c2f42;
+    --a-accent: #b794f6;
+    --a-accent-dim: #7c5cbf;
+    --a-gold: #f0b93a;
+    --a-text: #e8e8f2;
+    --a-muted: #8b8fa8;
+    --a-common: #9aa0b4;
+    --a-rare: #4caf50;
+    --a-epic: #fbc02d;
+    --a-unique: #ff8a3d;
+    --a-legendary: #ff5470;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(183,148,246,0.12), transparent),
+      radial-gradient(900px 500px at 100% 0%, rgba(240,185,58,0.08), transparent),
+      var(--a-bg);
+    color: var(--a-text);
+    font-family: "Segoe UI", Arial, sans-serif;
+  }
+`;
+
 function loginPageHtml(showError) {
   return `<!DOCTYPE html>
 <html lang="zh-TW">
@@ -124,24 +154,58 @@ function loginPageHtml(showError) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>管理員登入</title>
-<link rel="stylesheet" href="/style.css">
+<style>
+  ${ADMIN_BASE_STYLE}
+  .a-login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .a-login-card {
+    width: 100%; max-width: 340px;
+    background: var(--a-panel-solid);
+    border: 1px solid var(--a-border);
+    border-radius: 14px;
+    padding: 28px 26px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(183,148,246,0.06) inset;
+  }
+  .a-login-icon { font-size: 32px; text-align: center; margin-bottom: 6px; }
+  .a-login-title { text-align: center; font-size: 16px; font-weight: 700; color: var(--a-text); margin-bottom: 22px; letter-spacing: 1px; }
+  .a-field-label { display: block; font-size: 12px; color: var(--a-muted); margin-bottom: 6px; font-weight: 600; }
+  .a-input {
+    width: 100%; padding: 11px 12px; border-radius: 8px;
+    border: 1.5px solid var(--a-border); background: #0f1120; color: var(--a-text);
+    font-size: 14px; outline: none; transition: border-color .15s;
+  }
+  .a-input:focus { border-color: var(--a-accent); }
+  .a-submit-btn {
+    width: 100%; margin-top: 18px; padding: 11px; border: none; border-radius: 8px;
+    background: linear-gradient(135deg, var(--a-accent), var(--a-accent-dim));
+    color: #0b0c14; font-weight: 700; font-size: 14px; cursor: pointer;
+    transition: filter .15s;
+  }
+  .a-submit-btn:hover { filter: brightness(1.1); }
+  .a-error { background: rgba(255,84,112,0.12); border: 1px solid rgba(255,84,112,0.35); color: #ff8a9e; font-size: 12px; padding: 8px 10px; border-radius: 8px; margin-bottom: 16px; }
+</style>
 </head>
 <body>
-  <div class="app-header"><div class="app-title">🔒 管理員登入</div></div>
-  <div class="main-wrapper" style="justify-content:center;">
-    <div class="left-column" style="max-width:340px;">
-      <form class="equipped-panel" method="POST" action="/api/admin-login" style="gap:12px;">
-        ${showError ? '<div style="color:#ff5252;font-size:12px;">密碼錯誤，請再試一次</div>' : ''}
-        <div class="stat-input-group">
-          <label for="pw">管理員密碼</label>
-          <input type="password" id="pw" name="password" class="stat-input" autofocus required>
-        </div>
-        <button type="submit" class="action-btn">登入</button>
-      </form>
-    </div>
+  <div class="a-login-wrap">
+    <form class="a-login-card" method="POST" action="/api/admin-login">
+      <div class="a-login-icon">🔒</div>
+      <div class="a-login-title">管理員登入</div>
+      ${showError ? '<div class="a-error">密碼錯誤，請再試一次</div>' : ''}
+      <label class="a-field-label" for="pw">管理員密碼</label>
+      <input type="password" id="pw" name="password" class="a-input" autofocus required>
+      <button type="submit" class="a-submit-btn">登入</button>
+    </form>
   </div>
 </body>
 </html>`;
+}
+
+function rarityRow(cells) {
+  // cells: [label, common, rare, epic, unique, legendary]
+  return `<tr><td class="a-row-label">${cells[0]}</td><td>${cells[1]}</td><td>${cells[2]}</td><td>${cells[3]}</td><td class="a-col-unique">${cells[4]}</td><td class="a-col-legendary">${cells[5]}</td></tr>`;
+}
+
+function rarityHeadRow() {
+  return `<tr><th></th><th class="a-col-common">普通</th><th class="a-col-rare">稀有</th><th class="a-col-epic">史詩</th><th class="a-col-unique">獨特</th><th class="a-col-legendary">傳說</th></tr>`;
 }
 
 function adminPageHtml() {
@@ -151,95 +215,174 @@ function adminPageHtml() {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>管理員後台</title>
-<link rel="stylesheet" href="/style.css">
 <style>
-  .admin-subheading { font-size: 13px; font-weight: bold; color: #76c720; margin: 14px 0 6px; }
-  .admin-subheading:first-child { margin-top: 0; }
-  .admin-note { font-size: 11px; color: #8a8a9e; margin-top: 10px; line-height: 1.6; }
+  ${ADMIN_BASE_STYLE}
+
+  .a-topbar {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 22px;
+    background: rgba(11,12,20,0.9);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--a-border);
+  }
+  .a-topbar-title { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 800; letter-spacing: 1px; }
+  .a-topbar-title .a-badge {
+    font-size: 10px; font-weight: 700; color: #0b0c14; background: var(--a-gold);
+    padding: 2px 8px; border-radius: 999px; letter-spacing: 0.5px;
+  }
+  .a-logout-btn {
+    padding: 8px 16px; border-radius: 8px; border: 1px solid var(--a-border);
+    background: transparent; color: var(--a-muted); font-size: 12px; font-weight: 700; cursor: pointer;
+    transition: all .15s;
+  }
+  .a-logout-btn:hover { border-color: #ff5470; color: #ff8a9e; }
+
+  .a-shell { max-width: 1100px; margin: 0 auto; padding: 22px 20px 60px; }
+
+  .a-tabs { display: flex; gap: 10px; margin-bottom: 22px; }
+  .a-tab-btn {
+    display: flex; align-items: center; gap: 8px;
+    padding: 11px 20px; border-radius: 999px; border: 1.5px solid var(--a-border);
+    background: var(--a-panel-solid); color: var(--a-muted); font-size: 13px; font-weight: 700; cursor: pointer;
+    transition: all .15s;
+  }
+  .a-tab-btn:hover { color: var(--a-text); border-color: var(--a-accent-dim); }
+  .a-tab-btn.active {
+    color: #0b0c14; background: linear-gradient(135deg, var(--a-accent), var(--a-accent-dim));
+    border-color: transparent;
+    box-shadow: 0 6px 18px rgba(183,148,246,0.35);
+  }
+
+  .a-panel[hidden] { display: none; }
+
+  .a-card {
+    background: var(--a-panel-solid);
+    border: 1px solid var(--a-border);
+    border-left: 3px solid var(--a-accent-dim);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 18px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  }
+  .a-card-title {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 15px; font-weight: 800; color: var(--a-text); margin-bottom: 4px;
+  }
+  .a-card-title .a-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--a-accent); box-shadow: 0 0 10px var(--a-accent); }
+  .a-card-sub { font-size: 11px; color: var(--a-muted); margin-bottom: 14px; }
+
+  .a-subheading { font-size: 12px; font-weight: 700; color: var(--a-gold); margin: 16px 0 8px; letter-spacing: 0.5px; }
+  .a-subheading:first-of-type { margin-top: 4px; }
+
+  .a-table-scroll { overflow: auto; border-radius: 10px; border: 1px solid var(--a-border); }
+  .a-table-scroll.a-tall { max-height: 560px; }
+
+  table.a-table { width: 100%; border-collapse: collapse; font-size: 12px; white-space: nowrap; }
+  table.a-table th, table.a-table td { padding: 8px 12px; text-align: center; border-bottom: 1px solid var(--a-border); }
+  table.a-table thead th {
+    position: sticky; top: 0; z-index: 2;
+    background: #10111d; color: var(--a-muted); font-size: 11px; font-weight: 700;
+  }
+  table.a-table thead tr:nth-child(2) th { top: 33px; }
+  table.a-table tbody tr:nth-child(even) td { background: rgba(255,255,255,0.025); }
+  table.a-table tbody tr:hover td { background: rgba(183,148,246,0.08); }
+  table.a-table td:first-child, table.a-table th:first-child {
+    position: sticky; left: 0; z-index: 3;
+    background: #10111d;
+  }
+  table.a-table tbody tr:nth-child(even) td:first-child { background: #14151f; }
+  table.a-table tbody tr:hover td:first-child { background: #1c1830; }
+
+  .a-col-common { color: var(--a-common); }
+  .a-col-rare { color: var(--a-rare); }
+  .a-col-epic { color: var(--a-epic); }
+  .a-col-unique { color: var(--a-unique); }
+  .a-col-legendary { color: var(--a-legendary); font-weight: 700; }
+  .a-row-label { color: var(--a-text); font-weight: 700; }
+
+  .a-note { font-size: 11px; color: var(--a-muted); margin-top: 12px; line-height: 1.7; }
 </style>
 </head>
 <body>
-  <div class="app-header"><div class="app-title">🔒 管理員後台</div></div>
-  <div class="main-wrapper">
-    <div class="left-column" style="max-width:900px;">
-      <div class="file-action-bar">
-        <span class="autosave-hint">已登入為管理員</span>
-        <form method="POST" action="/api/admin-logout">
-          <button type="submit" class="action-btn">登出</button>
-        </form>
-      </div>
+  <div class="a-topbar">
+    <div class="a-topbar-title">🔒 管理員後台 <span class="a-badge">ADMIN</span></div>
+    <form method="POST" action="/api/admin-logout">
+      <button type="submit" class="a-logout-btn">登出</button>
+    </form>
+  </div>
 
-      <div class="equipped-panel">
-        <div class="panel-header"><span>符文升級攻略</span></div>
+  <div class="a-shell">
+    <div class="a-tabs">
+      <button class="a-tab-btn active" data-tab="rune" onclick="aSwitchTab('rune')">🔮 符文升級攻略</button>
+      <button class="a-tab-btn" data-tab="constellation" onclick="aSwitchTab('constellation')">⭐ 星座升級攻略</button>
+    </div>
 
-        <div class="admin-subheading">每級升級需求粉末數</div>
-        <div class="guide-table-scroll" style="max-height:none;">
-          <table class="guide-table">
-            <thead>
-              <tr><th>等級</th><th>普通</th><th>稀有</th><th>史詩</th><th>獨特</th><th>傳說</th></tr>
-            </thead>
+    <div class="a-panel" id="a-tab-rune">
+      <div class="a-card">
+        <div class="a-card-title"><span class="a-dot"></span>符文升級攻略</div>
+        <div class="a-card-sub">各品階符文升級所需粉末與符文數量</div>
+
+        <div class="a-subheading">每級升級需求粉末數</div>
+        <div class="a-table-scroll">
+          <table class="a-table">
+            <thead>${rarityHeadRow()}</thead>
             <tbody>
-              <tr><td>Lv.02-05</td><td>5</td><td>15</td><td>75</td><td>150</td><td>300</td></tr>
-              <tr><td>Lv.07-10</td><td>6</td><td>18</td><td>90</td><td>180</td><td>360</td></tr>
-              <tr><td>Lv.12-15</td><td>7</td><td>21</td><td>105</td><td>210</td><td>420</td></tr>
-              <tr><td>Lv.17-20</td><td>8</td><td>24</td><td>120</td><td>240</td><td>480</td></tr>
-              <tr><td>Lv.22-25</td><td>9</td><td>27</td><td>135</td><td>270</td><td>540</td></tr>
-              <tr><td>Lv.27-30</td><td>10</td><td>30</td><td>150</td><td>300</td><td>600</td></tr>
+              ${rarityRow(['Lv.02-05', 5, 15, 75, 150, 300])}
+              ${rarityRow(['Lv.07-10', 6, 18, 90, 180, 360])}
+              ${rarityRow(['Lv.12-15', 7, 21, 105, 210, 420])}
+              ${rarityRow(['Lv.17-20', 8, 24, 120, 240, 480])}
+              ${rarityRow(['Lv.22-25', 9, 27, 135, 270, 540])}
+              ${rarityRow(['Lv.27-30', 10, 30, 150, 300, 600])}
             </tbody>
           </table>
         </div>
 
-        <div class="admin-subheading">升級需求符文數 (Lv.6／11／16／21／26／31 額外需要)</div>
-        <div class="guide-table-scroll" style="max-height:none;">
-          <table class="guide-table">
-            <thead>
-              <tr><th>等級</th><th>普通</th><th>稀有</th><th>史詩</th><th>獨特</th><th>傳說</th></tr>
-            </thead>
+        <div class="a-subheading">升級需求符文數 (Lv.6／11／16／21／26／31 額外需要)</div>
+        <div class="a-table-scroll">
+          <table class="a-table">
+            <thead>${rarityHeadRow()}</thead>
             <tbody>
-              <tr><td>Lv.06</td><td>10</td><td>6</td><td>3</td><td>1</td><td>1</td></tr>
-              <tr><td>Lv.11</td><td>30</td><td>10</td><td>5</td><td>2</td><td>1</td></tr>
-              <tr><td>Lv.16</td><td>40</td><td>20</td><td>10</td><td>2+1</td><td>1+2</td></tr>
-              <tr><td>Lv.21</td><td>60</td><td>30</td><td>15</td><td>3+2</td><td>1+4</td></tr>
-              <tr><td>Lv.26</td><td>70</td><td>40</td><td>20</td><td>3+3</td><td>1+6</td></tr>
-              <tr><td>Lv.31</td><td>100</td><td>50</td><td>25</td><td>4+4</td><td>1+10</td></tr>
+              ${rarityRow(['Lv.06', 10, 6, 3, 1, 1])}
+              ${rarityRow(['Lv.11', 30, 10, 5, 2, 1])}
+              ${rarityRow(['Lv.16', 40, 20, 10, '2+1', '1+2'])}
+              ${rarityRow(['Lv.21', 60, 30, 15, '3+2', '1+4'])}
+              ${rarityRow(['Lv.26', 70, 40, 20, '3+3', '1+6'])}
+              ${rarityRow(['Lv.31', 100, 50, 25, '4+4', '1+10'])}
             </tbody>
           </table>
         </div>
 
-        <div class="admin-subheading">符文工藝 (製作) 需求粉末數</div>
-        <div class="guide-table-scroll" style="max-height:none;">
-          <table class="guide-table">
-            <thead>
-              <tr><th>普通</th><th>稀有</th><th>史詩</th><th>獨特</th><th>傳說</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>3</td><td>10</td><td>100</td><td>1,500</td><td>20,000</td></tr>
-            </tbody>
+        <div class="a-subheading">符文工藝 (製作) 需求粉末數</div>
+        <div class="a-table-scroll">
+          <table class="a-table">
+            <thead>${rarityHeadRow()}</thead>
+            <tbody>${rarityRow(['粉末數', 3, 10, 100, '1,500', '20,000'])}</tbody>
           </table>
         </div>
 
-        <div class="admin-subheading">符文拆卸取得粉末數</div>
-        <div class="guide-table-scroll" style="max-height:none;">
-          <table class="guide-table">
-            <thead>
-              <tr><th>普通</th><th>稀有</th><th>史詩</th><th>獨特</th><th>傳說</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>1</td><td>3</td><td>25</td><td>300</td><td>5,000</td></tr>
-            </tbody>
+        <div class="a-subheading">符文拆卸取得粉末數</div>
+        <div class="a-table-scroll">
+          <table class="a-table">
+            <thead>${rarityHeadRow()}</thead>
+            <tbody>${rarityRow(['粉末數', 1, 3, 25, 300, '5,000'])}</tbody>
           </table>
         </div>
 
-        <div class="admin-note">
+        <div class="a-note">
           ＊藍字為已驗證確認過的數值<br>
           ＊獨特及傳說升級有額外需求要小心
         </div>
       </div>
+    </div>
 
-      <div class="equipped-panel">
-        <div class="panel-header"><span>星座升級攻略</span></div>
-        <div class="guide-table-scroll" style="max-height:560px;">
-          <table class="guide-table">
+    <div class="a-panel" id="a-tab-constellation" hidden>
+      <div class="a-card">
+        <div class="a-card-title"><span class="a-dot"></span>星座升級攻略</div>
+        <div class="a-card-sub">節點 1～50 完整升級資源與數值路線一覽</div>
+
+        <div class="a-table-scroll a-tall">
+          <table class="a-table">
             <thead>
               <tr>
                 <th rowspan="2">節點</th>
@@ -268,7 +411,8 @@ function adminPageHtml() {
             <tbody>${renderConstellationRows()}</tbody>
           </table>
         </div>
-        <div class="admin-note">
+
+        <div class="a-note">
           ＊石＝腳踏石／果＝深淵之果／葉＝天空之葉／晶＝銀河水晶／魂＝靈魂<br>
           ＊「升級資源」為該節點單次消耗量，「累計資源」為升到該節點為止的總消耗量<br>
           ＊各數值路線「增」為該節點單次增加量，「累」為累計到該節點為止的總增加量
@@ -276,6 +420,17 @@ function adminPageHtml() {
       </div>
     </div>
   </div>
+
+  <script>
+    function aSwitchTab(name) {
+      document.querySelectorAll('.a-panel').forEach(function (p) {
+        p.hidden = (p.id !== 'a-tab-' + name);
+      });
+      document.querySelectorAll('.a-tab-btn').forEach(function (b) {
+        b.classList.toggle('active', b.getAttribute('data-tab') === name);
+      });
+    }
+  </script>
 </body>
 </html>`;
 }
