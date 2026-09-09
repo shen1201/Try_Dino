@@ -102,17 +102,13 @@
           <label for="hpInput" data-i18n="label.baseHp">基礎血量</label>
           <input type="number" id="hpInput" class="stat-input" placeholder="0" min="0" oninput="validateNumber(this, 'hp')">
         </div>
-        <div class="stat-input-group">
-          <label for="astroAttackInput" data-i18n="label.astroAtk">星座攻擊力</label>
-          <input type="number" id="astroAttackInput" class="stat-input" placeholder="0" min="0" oninput="validateNumber(this, 'constellationAttack')">
-        </div>
-        <div class="stat-input-group">
-          <label for="astroHpInput" data-i18n="label.astroHp">星座血量</label>
-          <input type="number" id="astroHpInput" class="stat-input" placeholder="0" min="0" oninput="validateNumber(this, 'constellationHp')">
+        <div class="stat-input-group" style="grid-column: span 2;">
+          <label for="astroLevelSelect" data-i18n="label.astroLevel">星座等級</label>
+          <select id="astroLevelSelect" class="stat-input" onchange="updateConstellationLevel(this.value)"></select>
         </div>
         <div class="stat-input-group" style="grid-column: span 2;">
-          <label for="astroBuildingAtkInput" data-i18n="label.astroBuildingAtk">星座建築物傷害</label>
-          <input type="number" id="astroBuildingAtkInput" class="stat-input" placeholder="0" min="0" oninput="validateNumber(this, 'constellationBuildingAtk')">
+          <label data-i18n="label.astroLevelStats">星座加成 (攻擊／血量／建築物傷害)</label>
+          <div id="astroLevelStatsDisplay" class="stat-input" style="display:flex; align-items:center; color:#8a8a9e;">—</div>
         </div>
 
         <!-- 造型加成選單 -->
@@ -196,6 +192,7 @@
 
   <script src="i18n.js"></script>
   <script src="runes-data.js"></script>
+  <script src="constellation-data.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
