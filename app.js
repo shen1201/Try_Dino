@@ -89,10 +89,16 @@ function updateSlotLevel(index, level) {
   calculateFinalStats();
 }
 
-// 星座攻擊／血量／建傷 3 條路線各自獨立的等級下拉選單 (Lv.1~50)
-const ASTRO_LEVEL_SELECT_IDS = ['astroAtkLevelSelect', 'astroHpLevelSelect', 'astroBuildLevelSelect'];
+// 星座攻擊／血量／建傷 3 條路線各自獨立的等級下拉選單 (Lv.1~50)，
+// 選項文字直接附上該等級的數值，例如「Lv.35 (343)」，不用另外開一個總結欄位。
+const ASTRO_LEVEL_SELECT_STAT_KEY = {
+  astroAtkLevelSelect: 'atk',
+  astroHpLevelSelect: 'hp',
+  astroBuildLevelSelect: 'buildDmg'
+};
 
 function populateAstroLevelSelect(selectId) {
+  const statKey = ASTRO_LEVEL_SELECT_STAT_KEY[selectId];
   const select = document.getElementById(selectId);
   const prevValue = select.value;
   select.innerHTML = '';
@@ -105,7 +111,8 @@ function populateAstroLevelSelect(selectId) {
   for (let lvl = 1; lvl <= 50; lvl++) {
     const opt = document.createElement('option');
     opt.value = lvl;
-    opt.textContent = `Lv.${lvl}`;
+    const val = getConstellationStats(lvl)[statKey];
+    opt.textContent = `Lv.${lvl} (${val.toLocaleString()})`;
     select.appendChild(opt);
   }
 
@@ -113,14 +120,13 @@ function populateAstroLevelSelect(selectId) {
 }
 
 function initAstroLevelSelects() {
-  ASTRO_LEVEL_SELECT_IDS.forEach(populateAstroLevelSelect);
+  Object.keys(ASTRO_LEVEL_SELECT_STAT_KEY).forEach(populateAstroLevelSelect);
 }
 
 function updateConstellationAtkLevel(value) {
   const level = parseInt(value, 10) || 0;
   playerStats.constellationAtkLevel = level;
   playerStats.constellationAttack = level > 0 ? getConstellationStats(level).atk : 0;
-  updateAstroLevelDisplay();
   calculateFinalStats();
 }
 
@@ -128,7 +134,6 @@ function updateConstellationHpLevel(value) {
   const level = parseInt(value, 10) || 0;
   playerStats.constellationHpLevel = level;
   playerStats.constellationHp = level > 0 ? getConstellationStats(level).hp : 0;
-  updateAstroLevelDisplay();
   calculateFinalStats();
 }
 
@@ -136,18 +141,7 @@ function updateConstellationBuildLevel(value) {
   const level = parseInt(value, 10) || 0;
   playerStats.constellationBuildLevel = level;
   playerStats.constellationBuildingAtk = level > 0 ? getConstellationStats(level).buildDmg : 0;
-  updateAstroLevelDisplay();
   calculateFinalStats();
-}
-
-function updateAstroLevelDisplay() {
-  const el = document.getElementById('astroLevelStatsDisplay');
-  const atk = playerStats.constellationAttack || 0;
-  const hp = playerStats.constellationHp || 0;
-  const buildDmg = playerStats.constellationBuildingAtk || 0;
-  el.textContent = (atk || hp || buildDmg)
-    ? t('astro.statsReadout', { atk: atk.toLocaleString(), hp: hp.toLocaleString(), build: buildDmg.toLocaleString() })
-    : '—';
 }
 
 function renderRunes() {
@@ -424,7 +418,6 @@ function refreshStatInputsUI() {
   document.getElementById('astroAtkLevelSelect').value = playerStats.constellationAtkLevel || 0;
   document.getElementById('astroHpLevelSelect').value = playerStats.constellationHpLevel || 0;
   document.getElementById('astroBuildLevelSelect').value = playerStats.constellationBuildLevel || 0;
-  updateAstroLevelDisplay();
   document.getElementById('eggSkinInput').value = (skinBonus.atk * 100).toFixed(1);
   document.getElementById('nestSkinInput').value = (skinBonus.hp * 100).toFixed(1);
 }
@@ -875,7 +868,6 @@ function onLanguageChange() {
   document.getElementById('astroAtkLevelSelect').value = playerStats.constellationAtkLevel || 0;
   document.getElementById('astroHpLevelSelect').value = playerStats.constellationHpLevel || 0;
   document.getElementById('astroBuildLevelSelect').value = playerStats.constellationBuildLevel || 0;
-  updateAstroLevelDisplay();
   updateSlotsUI();
   updateSetTabsUI();
   updateStatSetTabsUI();
