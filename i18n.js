@@ -5,8 +5,8 @@ const translations = {
   zh: {
     "meta.titleCalculator": "《Dino Mutant》符文配置與數值計算器(非官方)",
     "meta.titleGuide": "《Dino Mutant》攻略(非官方)",
-    "header.calculator": "🦖 《Dino Mutant》符文配置與數值計算器(非官方)",
-    "header.guide": "🦖 《Dino Mutant》攻略(非官方)",
+    "header.calculator": "《Dino Mutant》符文配置與數值計算器(非官方)",
+    "header.guide": "《Dino Mutant》攻略(非官方)",
     "nav.calculator": "🧮 符文計算器",
     "nav.guide": "📖 攻略",
 
@@ -131,8 +131,8 @@ const translations = {
   en: {
     "meta.titleCalculator": "Dino Mutant Rune Build & Stat Calculator (Unofficial)",
     "meta.titleGuide": "Dino Mutant Guide (Unofficial)",
-    "header.calculator": "🦖 Dino Mutant Rune Build & Stat Calculator (Unofficial)",
-    "header.guide": "🦖 Dino Mutant Guide (Unofficial)",
+    "header.calculator": "Dino Mutant Rune Build & Stat Calculator (Unofficial)",
+    "header.guide": "Dino Mutant Guide (Unofficial)",
     "nav.calculator": "🧮 Calculator",
     "nav.guide": "📖 Guide",
 
@@ -257,8 +257,8 @@ const translations = {
   es: {
     "meta.titleCalculator": "Dino Mutant: Calculadora de Runas y Estadísticas (No oficial)",
     "meta.titleGuide": "Dino Mutant: Guía (No oficial)",
-    "header.calculator": "🦖 Dino Mutant: Calculadora de Runas y Estadísticas (No oficial)",
-    "header.guide": "🦖 Dino Mutant: Guía (No oficial)",
+    "header.calculator": "Dino Mutant: Calculadora de Runas y Estadísticas (No oficial)",
+    "header.guide": "Dino Mutant: Guía (No oficial)",
     "nav.calculator": "🧮 Calculadora",
     "nav.guide": "📖 Guía",
 
@@ -383,8 +383,8 @@ const translations = {
   fr: {
     "meta.titleCalculator": "Dino Mutant : Calculateur de Runes et Stats (Non officiel)",
     "meta.titleGuide": "Dino Mutant : Guide (Non officiel)",
-    "header.calculator": "🦖 Dino Mutant : Calculateur de Runes et Stats (Non officiel)",
-    "header.guide": "🦖 Dino Mutant : Guide (Non officiel)",
+    "header.calculator": "Dino Mutant : Calculateur de Runes et Stats (Non officiel)",
+    "header.guide": "Dino Mutant : Guide (Non officiel)",
     "nav.calculator": "🧮 Calculateur",
     "nav.guide": "📖 Guide",
 
@@ -509,8 +509,8 @@ const translations = {
   ja: {
     "meta.titleCalculator": "『Dino Mutant』ルーン編成・数値計算機（非公式）",
     "meta.titleGuide": "『Dino Mutant』攻略（非公式）",
-    "header.calculator": "🦖 『Dino Mutant』ルーン編成・数値計算機（非公式）",
-    "header.guide": "🦖 『Dino Mutant』攻略（非公式）",
+    "header.calculator": "『Dino Mutant』ルーン編成・数値計算機（非公式）",
+    "header.guide": "『Dino Mutant』攻略（非公式）",
     "nav.calculator": "🧮 計算機",
     "nav.guide": "📖 攻略",
 

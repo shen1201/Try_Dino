@@ -42,6 +42,10 @@ body {
   text-shadow: 0 0 10px rgba(118, 199, 32, 0.3);
 }
 
+.admin-trigger {
+  cursor: pointer;
+}
+
 /* 頁面導覽列 */
 .site-nav {
   display: flex;
