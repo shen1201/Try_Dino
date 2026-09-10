@@ -176,6 +176,11 @@ function resetDateRange() {
 
 // ===== 折線圖 (純 SVG 手繪，不依賴外部圖表庫) =====
 
+// 存放目前圖表的座標換算資訊，滑鼠 hover 時用來找最近的那一天並畫出提示框
+let chartState = null;
+
+const CHART_COLORS = { atk: '#76c720', hp10: '#00e5ff', speed: '#ffca28', level: '#ff5470' };
+
 function renderGrowthChart() {
   const svg = document.getElementById('growthChartSvg');
   const emptyMsg = document.getElementById('growthChartEmpty');
@@ -185,6 +190,9 @@ function renderGrowthChart() {
   const filtered = growthRecords
     .filter((r) => (!startStr || r.date >= startStr) && (!endStr || r.date <= endStr))
     .sort((a, b) => a.date.localeCompare(b.date));
+
+  chartState = null;
+  hideChartTooltip();
 
   if (filtered.length === 0) {
     svg.innerHTML = '';
@@ -254,15 +262,107 @@ function renderGrowthChart() {
     <line x1="${padL}" y1="${H - padB}" x2="${W - padR}" y2="${H - padB}" stroke="#3a3d52" stroke-width="1.5" />
     ${yLabels}
     ${xLabels}
-    <polyline points="${pointsFor(series.atk)}" fill="none" stroke="#76c720" stroke-width="2" />
-    ${dotsFor(series.atk, '#76c720')}
-    <polyline points="${pointsFor(series.hp10)}" fill="none" stroke="#00e5ff" stroke-width="2" />
-    ${dotsFor(series.hp10, '#00e5ff')}
-    <polyline points="${pointsFor(series.speed)}" fill="none" stroke="#ffca28" stroke-width="2" />
-    ${dotsFor(series.speed, '#ffca28')}
-    <polyline points="${pointsFor(series.level)}" fill="none" stroke="#ff5470" stroke-width="2.5" />
-    ${dotsFor(series.level, '#ff5470')}
+    <polyline points="${pointsFor(series.atk)}" fill="none" stroke="${CHART_COLORS.atk}" stroke-width="2" />
+    ${dotsFor(series.atk, CHART_COLORS.atk)}
+    <polyline points="${pointsFor(series.hp10)}" fill="none" stroke="${CHART_COLORS.hp10}" stroke-width="2" />
+    ${dotsFor(series.hp10, CHART_COLORS.hp10)}
+    <polyline points="${pointsFor(series.speed)}" fill="none" stroke="${CHART_COLORS.speed}" stroke-width="2" />
+    ${dotsFor(series.speed, CHART_COLORS.speed)}
+    <polyline points="${pointsFor(series.level)}" fill="none" stroke="${CHART_COLORS.level}" stroke-width="2.5" />
+    ${dotsFor(series.level, CHART_COLORS.level)}
+    <g id="growthChartHoverGuide" visibility="hidden">
+      <line id="growthChartHoverLine" x1="0" y1="${padT}" x2="0" y2="${H - padB}" stroke="#8b8fa8" stroke-width="1" stroke-dasharray="4,3" />
+      <circle id="growthChartHoverDot-atk" r="4.5" fill="${CHART_COLORS.atk}" stroke="#fff" stroke-width="1.5" />
+      <circle id="growthChartHoverDot-hp10" r="4.5" fill="${CHART_COLORS.hp10}" stroke="#fff" stroke-width="1.5" />
+      <circle id="growthChartHoverDot-speed" r="4.5" fill="${CHART_COLORS.speed}" stroke="#fff" stroke-width="1.5" />
+      <circle id="growthChartHoverDot-level" r="4.5" fill="${CHART_COLORS.level}" stroke="#fff" stroke-width="1.5" />
+    </g>
+    <rect x="${padL}" y="${padT}" width="${chartW}" height="${chartH}" fill="transparent" style="cursor:crosshair;" id="growthChartHoverArea" />
   `;
+
+  chartState = {
+    W, H, padT, padB, chartH,
+    filtered,
+    xs: filtered.map((_, i) => xFor(i)),
+    ys: {
+      atk: series.atk.map(yFor),
+      hp10: series.hp10.map(yFor),
+      speed: series.speed.map(yFor),
+      level: series.level.map(yFor)
+    },
+    raw: series
+  };
+
+  const hoverArea = document.getElementById('growthChartHoverArea');
+  hoverArea.addEventListener('mousemove', handleChartHover);
+  hoverArea.addEventListener('mouseleave', hideChartTooltip);
+}
+
+function handleChartHover(event) {
+  if (!chartState) return;
+  const svg = document.getElementById('growthChartSvg');
+  const rect = svg.getBoundingClientRect();
+  if (rect.width === 0) return;
+
+  const scaleX = chartState.W / rect.width;
+  const mouseXInViewBox = (event.clientX - rect.left) * scaleX;
+
+  let nearestIdx = 0;
+  let nearestDiff = Infinity;
+  chartState.xs.forEach((x, i) => {
+    const diff = Math.abs(x - mouseXInViewBox);
+    if (diff < nearestDiff) { nearestDiff = diff; nearestIdx = i; }
+  });
+
+  showChartTooltip(nearestIdx, rect);
+}
+
+function showChartTooltip(idx, svgRect) {
+  const { filtered, xs, ys, raw, padT, chartH, W, H } = chartState;
+  const x = xs[idx];
+
+  const guide = document.getElementById('growthChartHoverGuide');
+  guide.setAttribute('visibility', 'visible');
+  document.getElementById('growthChartHoverLine').setAttribute('x1', x);
+  document.getElementById('growthChartHoverLine').setAttribute('x2', x);
+  ['atk', 'hp10', 'speed', 'level'].forEach((key) => {
+    const dot = document.getElementById(`growthChartHoverDot-${key}`);
+    dot.setAttribute('cx', x);
+    dot.setAttribute('cy', ys[key][idx]);
+  });
+
+  const tooltip = document.getElementById('growthChartTooltip');
+  tooltip.hidden = false;
+  tooltip.innerHTML = `
+    <div class="growth-tooltip-date">${filtered[idx].date}</div>
+    <div class="growth-tooltip-row"><span class="growth-tooltip-dot" style="background:${CHART_COLORS.atk}"></span><span class="growth-tooltip-label">${t('growth.legendAtk')}</span><span class="growth-tooltip-value">${Math.round(raw.atk[idx]).toLocaleString()}</span></div>
+    <div class="growth-tooltip-row"><span class="growth-tooltip-dot" style="background:${CHART_COLORS.hp10}"></span><span class="growth-tooltip-label">${t('growth.legendHp10')}</span><span class="growth-tooltip-value">${Math.round(raw.hp10[idx]).toLocaleString()}</span></div>
+    <div class="growth-tooltip-row"><span class="growth-tooltip-dot" style="background:${CHART_COLORS.speed}"></span><span class="growth-tooltip-label">${t('growth.legendSpeed')}</span><span class="growth-tooltip-value">${Math.round(raw.speed[idx]).toLocaleString()}</span></div>
+    <div class="growth-tooltip-row"><span class="growth-tooltip-dot" style="background:${CHART_COLORS.level}"></span><span class="growth-tooltip-label">${t('growth.legendLevel')}</span><span class="growth-tooltip-value">${Math.round(raw.level[idx]).toLocaleString()}</span></div>
+  `;
+
+  // 把 viewBox 座標換算回 wrap 容器裡的 CSS 像素位置
+  const wrap = document.querySelector('.growth-chart-wrap');
+  const wrapRect = wrap.getBoundingClientRect();
+  const scaleX = svgRect.width / W;
+  const scaleY = svgRect.height / H;
+  const pointLeft = (svgRect.left - wrapRect.left) + x * scaleX;
+  const pointTop = (svgRect.top - wrapRect.top) + padT * scaleY;
+
+  const tooltipWidth = tooltip.offsetWidth || 150;
+  let left = pointLeft + 14;
+  if (left + tooltipWidth > wrapRect.width) {
+    left = pointLeft - tooltipWidth - 14;
+  }
+  tooltip.style.left = `${Math.max(4, left)}px`;
+  tooltip.style.top = `${Math.max(4, pointTop)}px`;
+}
+
+function hideChartTooltip() {
+  const guide = document.getElementById('growthChartHoverGuide');
+  if (guide) guide.setAttribute('visibility', 'hidden');
+  const tooltip = document.getElementById('growthChartTooltip');
+  if (tooltip) tooltip.hidden = true;
 }
 
 function onLanguageChange() {

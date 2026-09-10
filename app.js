@@ -704,8 +704,8 @@ function calculateFinalStats() {
   // 4. 計算最終 DPS = 最終總攻擊力 + 符文平均每下傷害總和
   const finalDps = finalAtk + runeAvgDamageSum;
 
-  // 5. 恐龍等級 = 攻擊 + 血量/10 + 速度
-  const dinoLevel = Math.round(finalAtk + finalHp / 10 + finalSpeed);
+  // 5. 恐龍等級 = 基礎攻擊力 + 基礎血量/10 + 速度 (不含符文/星座/造型加成)
+  const dinoLevel = Math.round(playerStats.attack + playerStats.hp / 10 + finalSpeed);
 
   // 更新結果 UI
   document.getElementById('finalAttackVal').innerText = finalAtk.toLocaleString();
@@ -729,7 +729,7 @@ function calculateFinalStats() {
     `<span class="highlight-building">${t('calc.buildingLabel')}</span> (${finalAtk.toLocaleString()} + ${playerStats.constellationBuildingAtk}) × (1 + ${(totalDestroyerPct * 100).toFixed(1)}%) = <b>${finalBuildingAtk.toLocaleString()}</b>`;
 
   document.getElementById('dinoLevelFormulaDetails').innerHTML =
-    `<span class="highlight-dino-level">${t('calc.dinoLevelLabel')}</span> ${finalAtk.toLocaleString()} + ${finalHp.toLocaleString()}/10 + ${finalSpeed.toLocaleString()} = <b>${dinoLevel.toLocaleString()}</b>`;
+    `<span class="highlight-dino-level">${t('calc.dinoLevelLabel')}</span> ${playerStats.attack.toLocaleString()} + ${playerStats.hp.toLocaleString()}/10 + ${finalSpeed.toLocaleString()} = <b>${dinoLevel.toLocaleString()}</b>`;
 
   saveToLocalStorage();
 }
