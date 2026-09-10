@@ -109,6 +109,32 @@
         </div>
       </div>
 
+      <!-- 操作歷史紀錄 -->
+      <div class="equipped-panel">
+        <div class="panel-header growth-oplog-header">
+          <span data-i18n="growth.opLogTitle">操作歷史紀錄</span>
+          <button class="action-btn growth-oplog-toggle-btn" id="growthOpLogToggleBtn" onclick="toggleOpLogPanel()" data-i18n="growth.opLogBtn">查看操作紀錄</button>
+        </div>
+        <div id="growthOpLogBody" hidden>
+          <div class="guide-table-scroll" style="max-height: 420px;">
+            <table class="guide-table">
+              <thead>
+                <tr>
+                  <th data-i18n="growth.opLogColTime">操作時間</th>
+                  <th data-i18n="growth.opLogColAction">操作類型</th>
+                  <th data-i18n="growth.colDate">日期</th>
+                  <th data-i18n="growth.colAtk">攻擊</th>
+                  <th data-i18n="growth.colHp">血量</th>
+                  <th data-i18n="growth.colSpeed">速度</th>
+                  <th data-i18n="growth.colActions">操作</th>
+                </tr>
+              </thead>
+              <tbody id="growthOpLogTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 

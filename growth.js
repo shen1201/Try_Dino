@@ -1,7 +1,10 @@
 const GROWTH_STORAGE_KEY = 'dinoMutantGrowthLog';
+const GROWTH_OPLOG_STORAGE_KEY = 'dinoMutantGrowthOpLog';
 
 let growthRecords = [];
 let editingDate = null; // 目前正在編輯哪一筆的原始日期，null 代表新增模式
+let opLog = [];
+let opLogOpen = false;
 
 function loadGrowthRecords() {
   try {
@@ -41,6 +44,86 @@ function formatDateTime(iso) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+function formatDateTimeSec(iso) {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '-';
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+// ===== 操作歷史紀錄 =====
+
+function loadOpLog() {
+  try {
+    const raw = localStorage.getItem(GROWTH_OPLOG_STORAGE_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch (err) {
+    console.error("讀取操作歷史紀錄失敗", err);
+    return [];
+  }
+}
+
+function saveOpLog() {
+  try {
+    localStorage.setItem(GROWTH_OPLOG_STORAGE_KEY, JSON.stringify(opLog));
+  } catch (err) {
+    console.error("儲存操作歷史紀錄失敗", err);
+  }
+}
+
+function addOpLogEntry(action, date, atk, hp, speed) {
+  opLog.push({
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    action, // 'add' | 'update' | 'delete'
+    date,
+    atk,
+    hp,
+    speed,
+    timestamp: new Date().toISOString()
+  });
+  saveOpLog();
+  if (opLogOpen) renderOpLog();
+}
+
+function toggleOpLogPanel() {
+  opLogOpen = !opLogOpen;
+  document.getElementById('growthOpLogBody').hidden = !opLogOpen;
+  document.getElementById('growthOpLogToggleBtn').textContent = opLogOpen ? t('growth.opLogBtnHide') : t('growth.opLogBtn');
+  if (opLogOpen) renderOpLog();
+}
+
+function deleteOpLogEntry(id) {
+  if (!confirm(t('growth.opLogConfirmDelete'))) return;
+  opLog = opLog.filter((e) => e.id !== id);
+  saveOpLog();
+  renderOpLog();
+}
+
+function renderOpLog() {
+  const tbody = document.getElementById('growthOpLogTableBody');
+
+  if (opLog.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="color:#666; text-align:center; padding:12px;">${t('growth.opLogEmpty')}</td></tr>`;
+    return;
+  }
+
+  const sortedDesc = [...opLog].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+  const actionLabelKey = { add: 'growth.opLogActionAdd', update: 'growth.opLogActionUpdate', delete: 'growth.opLogActionDelete' };
+  const actionClassMap = { add: 'growth-oplog-action-add', update: 'growth-oplog-action-update', delete: 'growth-oplog-action-delete' };
+  tbody.innerHTML = sortedDesc.map((e) => `<tr>
+      <td>${formatDateTimeSec(e.timestamp)}</td>
+      <td><span class="growth-oplog-action ${actionClassMap[e.action] || ''}">${t(actionLabelKey[e.action] || e.action)}</span></td>
+      <td>${e.date}</td>
+      <td>${e.atk.toLocaleString()}</td>
+      <td>${e.hp.toLocaleString()}</td>
+      <td>${e.speed.toLocaleString()}</td>
+      <td><span class="growth-action-delete" onclick="deleteOpLogEntry('${e.id}')">${t('growth.delete')}</span></td>
+    </tr>`).join('');
+}
+
 // ===== 新增／編輯／刪除 =====
 
 function submitGrowthForm() {
@@ -72,8 +155,10 @@ function submitGrowthForm() {
       speed,
       updatedAt: now
     };
+    addOpLogEntry('update', date, atk, hp, speed);
   } else {
     growthRecords.push({ date, atk, hp, speed, createdAt: now, updatedAt: now });
+    addOpLogEntry('add', date, atk, hp, speed);
   }
 
   growthRecords.sort((a, b) => a.date.localeCompare(b.date));
@@ -113,8 +198,10 @@ function cancelEdit() {
 function deleteRecord(date) {
   if (!confirm(t('growth.confirmDelete', { date }))) return;
 
+  const removed = growthRecords.find((r) => r.date === date);
   growthRecords = growthRecords.filter((r) => r.date !== date);
   saveGrowthRecords();
+  if (removed) addOpLogEntry('delete', removed.date, removed.atk, removed.hp, removed.speed);
 
   if (editingDate === date) cancelEdit();
 
@@ -367,10 +454,13 @@ function hideChartTooltip() {
 
 function onLanguageChange() {
   renderGrowthTable();
+  document.getElementById('growthOpLogToggleBtn').textContent = opLogOpen ? t('growth.opLogBtnHide') : t('growth.opLogBtn');
+  if (opLogOpen) renderOpLog();
 }
 
 window.onload = () => {
   growthRecords = loadGrowthRecords().sort((a, b) => a.date.localeCompare(b.date));
+  opLog = loadOpLog();
   document.getElementById('growthDateInput').value = getTodayStr();
   updateDateRangeDefaults();
   renderGrowthTable();

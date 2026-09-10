@@ -974,3 +974,39 @@ body {
 .growth-action-delete:hover {
   background-color: rgba(255, 82, 82, 0.25);
 }
+
+.growth-oplog-header {
+  align-items: center;
+  gap: 10px;
+}
+
+.growth-oplog-toggle-btn {
+  flex: 0 0 auto;
+  padding: 6px 12px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.growth-oplog-action {
+  font-weight: bold;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+.growth-oplog-action-add {
+  color: #76c720;
+  background-color: rgba(118, 199, 32, 0.1);
+}
+
+.growth-oplog-action-update {
+  color: #ffca28;
+  background-color: rgba(255, 202, 40, 0.12);
+}
+
+.growth-oplog-action-delete {
+  color: #ff5252;
+  background-color: rgba(255, 82, 82, 0.1);
+}
