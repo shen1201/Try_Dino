@@ -29,6 +29,7 @@ function buildEmptyStatSet() {
     stats: {
       attack: 0,
       hp: 0,
+      speed: 0,
       constellationAtkLevel: 0,
       constellationHpLevel: 0,
       constellationBuildLevel: 0,
@@ -415,6 +416,7 @@ function updateStatSetTabsUI() {
 function refreshStatInputsUI() {
   document.getElementById('attackInput').value = playerStats.attack || '';
   document.getElementById('hpInput').value = playerStats.hp || '';
+  document.getElementById('speedInput').value = playerStats.speed || '';
   document.getElementById('astroAtkLevelSelect').value = playerStats.constellationAtkLevel || 0;
   document.getElementById('astroHpLevelSelect').value = playerStats.constellationHpLevel || 0;
   document.getElementById('astroBuildLevelSelect').value = playerStats.constellationBuildLevel || 0;
@@ -610,6 +612,9 @@ function calculateFinalStats() {
   const baseHpSum = playerStats.hp + playerStats.constellationHp + runeFlatHp;
   const finalHp = Math.round(baseHpSum * (1 + totalHpPct));
 
+  // 2b. 速度目前無符文/星座/造型加成來源，直接採用基礎速度
+  const finalSpeed = playerStats.speed || 0;
+
   // 3. 計算最終對建築物傷害 = (最終傷害 + 星座建築傷害) * (1 + 破壞者總相加%)
   const baseBuildingAtkSum = finalAtk + playerStats.constellationBuildingAtk;
   const finalBuildingAtk = Math.round(baseBuildingAtkSum * (1 + totalDestroyerPct));
@@ -699,11 +704,16 @@ function calculateFinalStats() {
   // 4. 計算最終 DPS = 最終總攻擊力 + 符文平均每下傷害總和
   const finalDps = finalAtk + runeAvgDamageSum;
 
+  // 5. 恐龍等級 = 攻擊 + 血量/10 + 速度
+  const dinoLevel = Math.round(finalAtk + finalHp / 10 + finalSpeed);
+
   // 更新結果 UI
   document.getElementById('finalAttackVal').innerText = finalAtk.toLocaleString();
   document.getElementById('finalHpVal').innerText = finalHp.toLocaleString();
+  document.getElementById('finalSpeedVal').innerText = finalSpeed.toLocaleString();
   document.getElementById('finalDpsVal').innerText = finalDps.toLocaleString();
   document.getElementById('finalBuildingAtkVal').innerText = finalBuildingAtk.toLocaleString();
+  document.getElementById('dinoLevelVal').innerText = dinoLevel.toLocaleString();
 
   // 更新計算過程 UI
   document.getElementById('atkFormulaDetails').innerHTML =
@@ -717,6 +727,9 @@ function calculateFinalStats() {
 
   document.getElementById('buildingAtkFormulaDetails').innerHTML =
     `<span class="highlight-building">${t('calc.buildingLabel')}</span> (${finalAtk.toLocaleString()} + ${playerStats.constellationBuildingAtk}) × (1 + ${(totalDestroyerPct * 100).toFixed(1)}%) = <b>${finalBuildingAtk.toLocaleString()}</b>`;
+
+  document.getElementById('dinoLevelFormulaDetails').innerHTML =
+    `<span class="highlight-dino-level">${t('calc.dinoLevelLabel')}</span> ${finalAtk.toLocaleString()} + ${finalHp.toLocaleString()}/10 + ${finalSpeed.toLocaleString()} = <b>${dinoLevel.toLocaleString()}</b>`;
 
   saveToLocalStorage();
 }

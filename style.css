@@ -423,8 +423,8 @@ body {
   border-radius: 12px;
   padding: 12px 8px;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px 6px;
   align-items: center;
   box-shadow: 0 0 12px rgba(118, 199, 32, 0.2);
 }
@@ -458,6 +458,16 @@ body {
 .result-value.building {
   color: #ff9800;
   text-shadow: 0 0 6px rgba(255, 152, 0, 0.4);
+}
+
+.result-value.speed {
+  color: #ffca28;
+  text-shadow: 0 0 6px rgba(255, 202, 40, 0.4);
+}
+
+.result-value.dino-level {
+  color: #ff5470;
+  text-shadow: 0 0 6px rgba(255, 84, 112, 0.4);
 }
 
 /* 已選擇符文列表面板 */
@@ -616,6 +626,8 @@ body {
 .highlight-hp { color: #4caf50; font-weight: bold; }
 .highlight-dps { color: #00e5ff; font-weight: bold; }
 .highlight-building { color: #ff9800; font-weight: bold; }
+.highlight-speed { color: #ffca28; font-weight: bold; }
+.highlight-dino-level { color: #ff5470; font-weight: bold; }
 
 /* 符文展示板 */
 .rune-board {
@@ -817,4 +829,101 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+/* 成長紀錄頁面 */
+.growth-form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.growth-range-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.growth-range-bar .stat-input-group {
+  flex: 1;
+  min-width: 140px;
+}
+
+.growth-reset-range-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.growth-chart-wrap {
+  position: relative;
+  width: 100%;
+  background-color: #15151e;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 8px;
+}
+
+.growth-chart-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.growth-chart-empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #666;
+  font-size: 12px;
+}
+
+.growth-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: #c0c0d0;
+}
+
+.growth-chart-legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.growth-legend-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.growth-action-edit, .growth-action-delete {
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin: 0 2px;
+  white-space: nowrap;
+}
+
+.growth-action-edit {
+  color: #76c720;
+  background-color: rgba(118, 199, 32, 0.1);
+}
+.growth-action-edit:hover {
+  background-color: rgba(118, 199, 32, 0.25);
+}
+
+.growth-action-delete {
+  color: #ff5252;
+  background-color: rgba(255, 82, 82, 0.1);
+}
+.growth-action-delete:hover {
+  background-color: rgba(255, 82, 82, 0.25);
 }
